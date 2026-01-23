@@ -10,6 +10,7 @@ import * as Cesium from 'cesium';
 const States = {
 	MENU: 'MENU',
 	PICK_SPAWN: 'PICK_SPAWN',
+	TRANSITIONING: 'TRANSITIONING',
 	FLYING: 'FLYING',
 	PAUSED: 'PAUSED',
 	CRASHED: 'CRASHED'
@@ -136,9 +137,12 @@ function checkCrash() {
 function animate() {
 	requestAnimationFrame(animate);
 	
-	if (currentState === States.FLYING || currentState === States.PAUSED) {
-		update(0.016);
-		threeContainer.classList.remove('hidden');
+	if (currentState === States.FLYING || currentState === States.PAUSED || currentState === States.TRANSITIONING) {
+		if (currentState === States.FLYING) {
+			update(0.016);
+		}
+		// Plane is rendered, but update() is only called in FLYING state
+		// During TRANSITIONING, camera is moved by Cesium flyTo
 		renderer.render(scene, camera);
 	} else {
 		threeContainer.classList.add('hidden');
@@ -253,34 +257,46 @@ document.getElementById('confirmSpawnBtn').onclick = () => {
 		spawnMarker = null;
 	}
 
-	// Cancel teleport/flyTo and set camera immediately
-	viewer.camera.cancelFlight();
-
 	state.speed = 150;
 	state.pitch = 0;
 	state.roll = 0;
 	state.heading = 0;
 	
-	// Reset physics and HUD timer
+	// Reset physics
 	physics = new PlanePhysics();
 	hud.resetTime();
 	hud.resizeMinimap(); 
-	flightStartTime = Date.now();
-	
-	// Force immediate camera sync
-	setCameraToPlane(state.lon, state.lat, state.alt, state.heading, state.pitch, state.roll);
 	
 	spawnInstruction.classList.add('hidden');
 	confirmSpawnBtn.classList.add('hidden');
-	uiContainer.classList.remove('hidden');
-	threeContainer.classList.remove('hidden');
+	
+	currentState = States.TRANSITIONING;
 
-	// Resize HUD after showing it so offsetWidth/Height are non-zero
+	// Beautiful fly-in transition to cockpit
+	viewer.camera.flyTo({
+		destination: Cesium.Cartesian3.fromDegrees(state.lon, state.lat, state.alt),
+		orientation: {
+			heading: Cesium.Math.toRadians(state.heading),
+			pitch: Cesium.Math.toRadians(state.pitch),
+			roll: Cesium.Math.toRadians(state.roll)
+		},
+		duration: 2.0,
+		easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+		complete: () => {
+			flightStartTime = Date.now();
+			uiContainer.classList.remove('hidden');
+			threeContainer.classList.remove('hidden');
+			hud.resizeMinimap();
+			currentState = States.FLYING;
+		}
+	});
+
+	// Minor delay to show threeContainer slightly before flight starts so it blends
 	setTimeout(() => {
-		hud.resizeMinimap();
-	}, 10);
-
-	currentState = States.FLYING;
+		if (currentState === States.TRANSITIONING) {
+			threeContainer.classList.remove('hidden');
+		}
+	}, 1500);
 };
 
 // Keyboard for Pause
