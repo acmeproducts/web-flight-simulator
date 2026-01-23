@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Flight Simulator</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+        #cesiumContainer {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        #threeContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Let clicks pass through to Cesium if needed, but we'll probably capture them in Three.js for HUD */
+        }
+        #uiContainer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            text-shadow: 1px 1px 2px #000;
+            pointer-events: none;
+        }
+        #webcamContainer {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            height: 240px;
+            border: 2px solid #0f0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #222;
+        }
+        #webcam {
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1); /* Mirror view */
+        }
+        #debugCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+    </style>
+</head>
+<body>
+    <div id="cesiumContainer"></div>
+    <div id="threeContainer"></div>
+    <div id="uiContainer">
+        <div id="hud-info">
+            SPD: <span id="speed">0</span> KTS<br>
+            ALT: <span id="altitude">0</span> FT<br>
+            HUD: <span id="hud-status">STANDBY</span>
+        </div>
+    </div>
+    <div id="webcamContainer">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="debugCanvas"></canvas>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
