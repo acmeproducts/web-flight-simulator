@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { initCesium, setCameraToPlane, getViewer } from './world/cesiumWorld';
 import { PlanePhysics } from './plane/planePhysics';
 import { PlaneController } from './plane/planeController';
@@ -32,9 +33,16 @@ let state = {
 
 let scene, camera, renderer;
 let planeModel;
+let mixer, clock;
 let physics = new PlanePhysics();
 let controller = new PlaneController();
 let hud = new HUD();
+
+// Visual Inertia Constants
+const BASE_PLANE_POS = new THREE.Vector3(0, -2, -8);
+let visualOffset = new THREE.Vector3().copy(BASE_PLANE_POS);
+let visualRotation = new THREE.Euler(0, 0, 0);
+let lastSpeed = 0;
 
 // DOM Elements
 const mainMenu = document.getElementById('mainMenu');
@@ -48,6 +56,7 @@ const confirmSpawnBtn = document.getElementById('confirmSpawnBtn');
 let spawnMarker = null;
 
 function initThree() {
+	clock = new THREE.Clock();
 	scene = new THREE.Scene();
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -65,16 +74,37 @@ function initThree() {
 	directionalLight.position.set(5, 10, 5);
 	scene.add(directionalLight);
 
-	const geometry = new THREE.BoxGeometry(2, 0.5, 4);
-	const material = new THREE.MeshBasicMaterial({ 
-		color: 0xff0000,
-		wireframe: false
-	});
-	planeModel = new THREE.Mesh(geometry, material);
-	scene.add(planeModel);
+	const loader = new GLTFLoader();
+	loader.load('/assets/models/low_poly_f-15.glb', (gltf) => {
+		const mesh = gltf.scene;
+		
+		// Create a wrapper group to fix orientation
+		planeModel = new THREE.Group();
+		planeModel.add(mesh);
+		scene.add(planeModel);
 
-	// Position relative to cockpit view
-	planeModel.position.set(0, -1.2, -6);
+		// Fix the model's internal rotation (it was facing sideways)
+		// Most GLB models face +Z (backwards) or +X (sideways)
+		// Based on the screenshot, it was facing the camera (+Z).
+		// We rotate it to face away from the camera (-Z).
+		mesh.rotation.y = Math.PI / 2; 
+		
+		// Position relative to camera (Chase View)
+		planeModel.position.copy(BASE_PLANE_POS);
+		planeModel.scale.set(0.5, 0.5, 0.5); 
+		
+		// Setup Animation - Using static pose 'F15 ldg'
+		mixer = new THREE.AnimationMixer(mesh);
+		const clip = THREE.AnimationClip.findByName(gltf.animations, 'F15 ldg');
+		if (clip) {
+			const action = mixer.clipAction(clip);
+			action.setLoop(THREE.LoopOnce);
+			action.clampWhenFinished = true;
+			action.play();
+		}
+	}, undefined, (error) => {
+		console.error('Error loading model:', error);
+	});
 }
 
 function update(dt) {
@@ -83,6 +113,7 @@ function update(dt) {
 	const input = controller.update();
 	const physicsResult = physics.update(input, dt);
 
+	const prevSpeed = state.speed;
 	state.speed = physicsResult.speed;
 	state.pitch = physicsResult.pitch;
 	state.roll = physicsResult.roll;
@@ -102,8 +133,32 @@ function update(dt) {
 	setCameraToPlane(state.lon, state.lat, state.alt, state.heading, state.pitch, state.roll);
 
 	if (planeModel) {
-		planeModel.rotation.z = THREE.MathUtils.degToRad(-state.roll);
-		planeModel.rotation.x = THREE.MathUtils.degToRad(state.pitch);
+		// --- INERTIA EFFECTS ---
+		// 1. Longitudinal (Speed/Accel)
+		const accel = (state.speed - prevSpeed) / dt;
+		// Forward offset (away from camera) on acceleration, backward on braking
+		const targetZ = BASE_PLANE_POS.z - (accel * 0.01); 
+		
+		// 2. Lateral/Vertical (Pitch/Roll)
+		// Model shifts slightly in frame when maneuvering
+		const targetX = BASE_PLANE_POS.x - (input.roll * 1.5);
+		const targetY = BASE_PLANE_POS.y - (input.pitch * 1.0);
+		
+		// 3. Rotation Lag
+		const targetRotZ = THREE.MathUtils.degToRad(-input.roll * 15);
+		const targetRotX = THREE.MathUtils.degToRad(input.pitch * 10);
+
+		// Smooth transition (Spring-like lerp)
+		const lerpFactor = 5.0 * dt;
+		visualOffset.x += (targetX - visualOffset.x) * lerpFactor;
+		visualOffset.y += (targetY - visualOffset.y) * lerpFactor;
+		visualOffset.z += (targetZ - visualOffset.z) * lerpFactor;
+		
+		visualRotation.z += (targetRotZ - visualRotation.z) * lerpFactor;
+		visualRotation.x += (targetRotX - visualRotation.x) * lerpFactor;
+
+		planeModel.position.copy(visualOffset);
+		planeModel.rotation.set(visualRotation.x, visualRotation.y, visualRotation.z);
 	}
 }
 
@@ -137,10 +192,15 @@ function checkCrash() {
 function animate() {
 	requestAnimationFrame(animate);
 	
+	const dt = clock ? clock.getDelta() : 0.016;
+
 	if (currentState === States.FLYING || currentState === States.PAUSED || currentState === States.TRANSITIONING) {
 		if (currentState === States.FLYING) {
-			update(0.016);
+			update(dt);
 		}
+		
+		if (mixer) mixer.update(dt);
+		
 		// Plane is rendered, but update() is only called in FLYING state
 		// During TRANSITIONING, camera is moved by Cesium flyTo
 		renderer.render(scene, camera);

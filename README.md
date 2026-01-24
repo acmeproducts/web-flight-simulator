@@ -94,3 +94,9 @@ Build a web-based flight simulator with the following features:
 - Modern browser (Chrome/Edge/Firefox) with WebGL 2.0.
 - Hardware with 8GB RAM and stable internet connection (for Cesium terrain data streaming).
 
+------------------------------------------------------------------------
+
+## 7. Credits & Attributions
+
+- ["Low poly F-15"](https://sketchfab.com/3d-models/low-poly-f-15-0c1cfa22d7094556914fcdfba75bef5d) model by SIpriv, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
