@@ -139,16 +139,17 @@ function update(dt) {
 		// 1. Longitudinal (Speed/Accel)
 		const accel = (state.speed - prevSpeed) / dt;
 		// Forward offset (away from camera) on acceleration, backward on braking
-		const targetZ = BASE_PLANE_POS.z - (accel * 0.01); 
+		const targetZ = BASE_PLANE_POS.z - (accel * 0.005); 
 		
-		// 2. Lateral/Vertical (Pitch/Roll)
+		// 2. Lateral/Vertical (Pitch/Roll/Yaw)
 		// Model shifts slightly in frame when maneuvering
-		const targetX = BASE_PLANE_POS.x - (input.roll * 1.5);
+		const targetX = BASE_PLANE_POS.x - (input.roll * 1.5) - (input.yaw * 0.3);
 		const targetY = BASE_PLANE_POS.y - (input.pitch * 0.25);
 		
 		// 3. Rotation Lag
 		const targetRotZ = THREE.MathUtils.degToRad(-input.roll * 15);
 		const targetRotX = THREE.MathUtils.degToRad(input.pitch * 10);
+		const targetRotY = THREE.MathUtils.degToRad(-input.yaw * 4);
 
 		// Smooth transition (Spring-like lerp)
 		const lerpFactor = 5.0 * dt;
@@ -158,6 +159,7 @@ function update(dt) {
 		
 		visualRotation.z += (targetRotZ - visualRotation.z) * lerpFactor;
 		visualRotation.x += (targetRotX - visualRotation.x) * lerpFactor;
+		visualRotation.y += (targetRotY - visualRotation.y) * lerpFactor;
 
 		planeModel.position.copy(visualOffset);
 		planeModel.rotation.set(visualRotation.x, visualRotation.y, visualRotation.z);
