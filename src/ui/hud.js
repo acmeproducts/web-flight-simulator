@@ -6,6 +6,9 @@ export class HUD {
 		this.altElem = document.getElementById('altitude');
 		this.timeElem = document.getElementById('time');
 		this.scoreElem = document.getElementById('score');
+		this.fpsElem = document.getElementById('fps');
+		this.localDateTimeElem = document.getElementById('local-datetime');
+		this.coordsElem = document.getElementById('coords');
 		this.minimapCanvas = document.getElementById('minimap');
 		this.miniCtx = this.minimapCanvas.getContext('2d');
 		this.uiContainer = document.getElementById('uiContainer');
@@ -201,6 +204,30 @@ export class HUD {
 		const s = elapsed % 60;
 		this.timeElem.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 
+		// Update Local DateTime & Coordinates
+		const now = new Date();
+		const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+		// Calculate timezone offset (rounded longitude / 15 degrees per hour)
+		const tzOffsetHours = Math.round((state.lon || 0) / 15);
+		const localDate = new Date(utc + (3600000 * tzOffsetHours));
+
+		if (this.localDateTimeElem) {
+			const yyyy = localDate.getFullYear();
+			const mm = (localDate.getMonth() + 1).toString().padStart(2, '0');
+			const dd = localDate.getDate().toString().padStart(2, '0');
+			const hh = localDate.getHours().toString().padStart(2, '0');
+			const min = localDate.getMinutes().toString().padStart(2, '0');
+			const ss = localDate.getSeconds().toString().padStart(2, '0');
+			
+			this.localDateTimeElem.innerText = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}Z`;
+		}
+
+		if (this.coordsElem) {
+			const latDir = state.lat >= 0 ? 'N' : 'S';
+			const lonDir = state.lon >= 0 ? 'E' : 'W';
+			this.coordsElem.innerText = `POS: ${Math.abs(state.lat).toFixed(4)}°${latDir} ${Math.abs(state.lon).toFixed(4)}°${lonDir}`;
+		}
+
 		// 4. Update Horizon (Using smoothed values for "Inertia" look)
 		const pitchLines = document.getElementById('pitch-lines');
 		const horizon = document.getElementById('horizon-container');
@@ -324,5 +351,11 @@ export class HUD {
 		ctx.beginPath();
 		ctx.arc(centerX, centerY, sweepTime * radius, 0, Math.PI * 2);
 		ctx.stroke();
+	}
+
+	updateFPS(fps) {
+		if (this.fpsElem) {
+			this.fpsElem.innerText = Math.round(fps).toString();
+		}
 	}
 }

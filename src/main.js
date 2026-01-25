@@ -38,6 +38,11 @@ let physics = new PlanePhysics();
 let controller = new PlaneController();
 let hud = new HUD();
 
+// FPS calculation
+let fps = 0;
+let frameCount = 0;
+let lastFpsUpdate = 0;
+
 // Visual Inertia Constants
 const BASE_PLANE_POS = new THREE.Vector3(0, -0.8, -2.75);
 let visualOffset = new THREE.Vector3().copy(BASE_PLANE_POS);
@@ -255,6 +260,16 @@ function animate() {
 	requestAnimationFrame(animate);
 	
 	const dt = clock ? clock.getDelta() : 0.016;
+	const now = performance.now();
+	
+	// FPS Calculation
+	frameCount++;
+	if (now - lastFpsUpdate >= 1000) {
+		fps = (frameCount * 1000) / (now - lastFpsUpdate);
+		frameCount = 0;
+		lastFpsUpdate = now;
+		hud.updateFPS(fps);
+	}
 
 	if (currentState === States.FLYING || currentState === States.PAUSED || currentState === States.TRANSITIONING) {
 		if (currentState === States.FLYING) {

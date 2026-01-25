@@ -60,6 +60,13 @@
             left: 30px;
             font-size: 20px;
         }
+        #hud-top-right {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            font-size: 20px;
+            text-align: right;
+        }
         #hud-speed-box {
             position: absolute;
             top: 50%;
@@ -111,6 +118,22 @@
             background: rgba(0, 40, 0, 0.3);
             overflow: hidden;
             border-radius: 4px; /* Slight rounding for the square box */
+            box-sizing: border-box;
+        }
+        #coords {
+            position: absolute;
+            bottom: 280px;
+            left: 30px;
+            width: 250px;
+            font-size: 13px;
+            text-shadow: 0 0 5px #000;
+            background: rgba(0, 40, 0, 0.6);
+            border: 2px solid rgba(0, 255, 0, 0.5);
+            border-bottom: none;
+            box-sizing: border-box;
+            padding: 4px;
+            text-align: center;
+            letter-spacing: 1px;
         }
         #minimapCesium {
             position: absolute;
@@ -267,6 +290,11 @@
             SCORE <span id="score">000000</span>
         </div>
         
+        <div id="hud-top-right">
+            FPS <span id="fps">60</span><br>
+            <span id="local-datetime">01 JAN 26 | 00:00:00</span>
+        </div>
+        
         <div id="hud-speed-box">
             <div class="label">SPEED</div>
             <div class="value-box">
@@ -280,6 +308,8 @@
                 <span id="altitude">0</span>
             </div>
         </div>
+
+        <div id="coords">0.0000, 0.0000</div>
 
         <div id="minimap-container">
             <div id="minimapCesium"></div>
