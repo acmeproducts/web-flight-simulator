@@ -55,12 +55,12 @@ A high-performance, web-based flight simulator built with Three.js and CesiumJS,
    npm run build
    ```
 
-## � Credits & Attributions
+## 🏷️ Credits & Attributions
 
 - **3D Model**: ["Low poly F-15"](https://sketchfab.com/3d-models/low-poly-f-15-0c1cfa22d7094556914fcdfba75bef5d) by [SIpriv](https://sketchfab.com/sipriv), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Engine**: [Three.js](https://threejs.org/) community and contributors.
 - **Terrain & Map**: [CesiumJS](https://cesium.com/) by Cesium GS, Inc.
 
-## �📜 License
+## 🧾 License
 
 This project is licensed under the ISC License.
