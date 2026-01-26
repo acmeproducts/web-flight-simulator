@@ -523,15 +523,20 @@ document.getElementById('confirmSpawnBtn').onclick = () => {
 
 		setControlsEnabled(false);
 
-		state.speed = 150;
+		state.speed = 100;
 		state.pitch = 0;
 		state.roll = 0;
 		state.heading = 0;
+
+		// Reset visual inertia
+		visualOffset.copy(BASE_PLANE_POS);
+		visualRotation.set(0, 0, 0);
+		boostRoll = 0;
+		currentBoostZOffset = 0;
+		lastIsBoosting = false;
 		
-		// Reset mouse camera
-		controller.resetMouse();
-		
-		// Reset physics and set initial orientation
+		// Reset physics and controls
+		controller.reset();
 		physics = new PlanePhysics();
 		physics.reset(state.lon, state.lat, state.alt, state.heading, state.pitch, state.roll);
 		
@@ -562,13 +567,6 @@ document.getElementById('confirmSpawnBtn').onclick = () => {
 				if (vignette) vignette.style.opacity = '0';
 			}
 		});
-
-		// Minor delay to show threeContainer slightly before flight starts so it blends
-		setTimeout(() => {
-			if (currentState === States.TRANSITIONING) {
-				threeContainer.classList.remove('hidden');
-			}
-		}, 1500);
 	}, 500);
 };
 

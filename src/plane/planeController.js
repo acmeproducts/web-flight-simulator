@@ -92,12 +92,16 @@ export class PlaneController {
 		return this.input;
 	}
 
-	resetMouse() {
+	reset() {
 		this.input.cameraYaw = 0;
 		this.input.cameraPitch = 0;
 		this.mouseDragging = false;
 		this.mouseDeltaX = 0;
 		this.mouseDeltaY = 0;
+		this.input.throttle = 0; // Start at idle (min speed)
+		this.input.pitch = 0;
+		this.input.roll = 0;
+		this.input.yaw = 0;
 	}
 
 	lerp(start, end, amt) {
