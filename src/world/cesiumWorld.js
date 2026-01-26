@@ -56,11 +56,17 @@ export function initCesium() {
 		v.scene.screenSpaceCameraController.enableTilt = false;
 		v.scene.screenSpaceCameraController.enableLook = false;
 		
-		// Persistence & Caching - Prevents re-rendering the same area when rotating
-		v.scene.globe.tileCacheSize = 512; // Increase cache size (default is 100)
-		v.scene.globe.preloadAncestors = true; // Preload parent tiles
-		v.scene.globe.preloadSiblings = true; // Preload tiles at the same level
-		v.scene.globe.loadingDescendantLimit = 4; // Allow more concurrent loads for smoother cache filling
+		// Persistence & Caching - High performance for flight
+		v.scene.globe.tileCacheSize = 2048; // Significantly increase cache for 360-degree turns
+		v.scene.globe.preloadAncestors = true;
+		v.scene.globe.preloadSiblings = true;
+		v.scene.globe.loadingDescendantLimit = 20; // Allow more concurrent loads
+		
+		// Skip LODs to reduce intermediate tile fetch and stutter
+		v.scene.globe.skipLevelOfDetail = true;
+		v.scene.globe.baseScreenSpaceError = 1024;
+		v.scene.globe.skipScreenSpaceErrorFactor = 16;
+		v.scene.globe.skipLevels = 1;
 		
 		v._cesiumWidget._creditContainer.style.display = "none";
 	});
