@@ -24,6 +24,9 @@ export class HUD {
 		this.smoothedHeading = 0;
 		this.smoothedThrottle = 0;
 		this.smoothedYaw = 0;
+		this.smoothedBoostScale = 1.0;
+		this.currentShakeX = 0;
+		this.currentShakeY = 0;
 		
 		this.createHorizon();
 		this.resizeMinimap();
@@ -181,18 +184,26 @@ export class HUD {
 			const shiftX = Math.max(-maxShift, Math.min(maxShift, -rollDiff * 1.5 - yawDiff * 20.0));  // Slight slide (Roll + Yaw)
 			const shiftY = Math.max(-maxShift, Math.min(maxShift, pitchDiff * 3.0 + throttleDiff * 15.0));   // Slide with pitch + throttle
 			
+			// Smooth Boost Scale Transition
+			const targetBoostScale = isBoosting ? 1.02 : 1.0;
+			this.smoothedBoostScale = this.smoothedBoostScale + (targetBoostScale - this.smoothedBoostScale) * 0.1;
+
 			// Acceleration "Zoom" effect
-			const scale = (1 + (throttleDiff * 0.25)) * (isBoosting ? 1.02 : 1); 
+			const scale = (1 + (throttleDiff * 0.25)) * this.smoothedBoostScale; 
 			
-			// Boost Shake
-			let shakeX = 0;
-			let shakeY = 0;
+			// Smoother Boost Shake (Time-based sine waves)
 			if (isBoosting) {
-				shakeX = (Math.random() - 0.5) * 5;
-				shakeY = (Math.random() - 0.5) * 5;
+				const time = Date.now() * 0.05;
+				// Mixing multiple frequencies for more organic jitter
+				this.currentShakeX = Math.sin(time * 1.5) * 2 + Math.cos(time * 2.1) * 1.5;
+				this.currentShakeY = Math.cos(time * 1.7) * 2 + Math.sin(time * 2.3) * 1.5;
+			} else {
+				// Rapidly decay shake when booster ends
+				this.currentShakeX *= 0.85;
+				this.currentShakeY *= 0.85;
 			}
 
-			this.uiContainer.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translate(${shiftX + shakeX}px, ${shiftY + shakeY}px) scale(${scale})`;
+			this.uiContainer.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translate(${shiftX + this.currentShakeX}px, ${shiftY + this.currentShakeY}px) scale(${scale})`;
 		}
 
 		// 3. Update Speed & Alt
