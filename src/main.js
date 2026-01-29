@@ -325,13 +325,23 @@ function update(dt) {
 		// 2. Lateral/Vertical (Pitch/Roll/Yaw)
 		// Model shifts slightly in frame when maneuvering
 		// Disable inertia during mouse dragging for absolute center spectate
-		const targetX = input.isDragging ? BASE_PLANE_POS.x : BASE_PLANE_POS.x - (input.roll * 0.6) - (input.yaw * 0.12);
-		const targetY = input.isDragging ? BASE_PLANE_POS.y : BASE_PLANE_POS.y - (input.pitch * 0.1);
+		
+		// --- IDLE ANIMATION (Breathe/Float) ---
+		// Add subtle oscillation to make the plane look "alive" when not maneuvering
+		const time = performance.now() * 0.001;
+		const idleX = Math.sin(time * 0.8) * 0.015;
+		const idleY = Math.cos(time * 0.6) * 0.01;
+		const idleRotX = Math.sin(time * 0.5) * 0.005;
+		const idleRotY = Math.cos(time * 0.4) * 0.005;
+		const idleRotZ = Math.sin(time * 0.7) * 0.01;
+
+		const targetX = input.isDragging ? BASE_PLANE_POS.x : BASE_PLANE_POS.x - (input.roll * 0.6) - (input.yaw * 0.12) + idleX;
+		const targetY = input.isDragging ? BASE_PLANE_POS.y : BASE_PLANE_POS.y - (input.pitch * 0.1) + idleY;
 		
 		// 3. Rotation Lag
-		let targetRotZ = input.isDragging ? 0 : THREE.MathUtils.degToRad(-input.roll * 15);
-		const targetRotX = input.isDragging ? 0 : THREE.MathUtils.degToRad(input.pitch * 10);
-		const targetRotY = input.isDragging ? 0 : THREE.MathUtils.degToRad(-input.yaw * 4);
+		let targetRotZ = input.isDragging ? 0 : THREE.MathUtils.degToRad(-input.roll * 15) + idleRotZ;
+		const targetRotX = input.isDragging ? 0 : THREE.MathUtils.degToRad(input.pitch * 10) + idleRotX;
+		const targetRotY = input.isDragging ? 0 : THREE.MathUtils.degToRad(-input.yaw * 4) + idleRotY;
 
 		// Smooth transition (Spring-like lerp)
 		const lerpFactor = physicsResult.isBoosting ? 3.0 * dt : 5.0 * dt; // Slower lag during boost for effect
