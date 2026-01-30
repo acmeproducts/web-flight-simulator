@@ -12,6 +12,8 @@ export class HUD {
 		this.minimapCanvas = document.getElementById('minimap');
 		this.miniCtx = this.minimapCanvas.getContext('2d');
 		this.uiContainer = document.getElementById('uiContainer');
+		this.compassTape = document.getElementById('compass-tape');
+		this.headingDisplay = document.getElementById('heading-display');
 
 		// Shared Vignette Effect (from index.html)
 		this.vignette = document.getElementById('transition-vignette');
@@ -31,8 +33,52 @@ export class HUD {
 		this.minimapRange = 1; // Default 1km
 		
 		this.createHorizon();
+		this.createCompass();
 		this.resizeMinimap();
 		window.addEventListener('resize', () => this.resizeMinimap());
+	}
+
+	createCompass() {
+		if (!this.compassTape) return;
+		
+		// Create ticks and labels for -360 to 720 (3 full circles)
+		// This ensures that we never run out of tape regardless of wrapping
+		const step = 5; 
+		const pixelsPerDegree = 4;
+		
+		this.compassTape.innerHTML = ''; // Clear for rebuild
+		
+		for (let i = -360; i <= 720; i += step) {
+			const tick = document.createElement('div');
+			tick.className = 'compass-tick';
+			
+			const isMajor = i % 10 === 0;
+			const isCardinal = i % 90 === 0;
+			
+			tick.style.left = `${(i + 360) * pixelsPerDegree}px`;
+			tick.style.height = isMajor ? (isCardinal ? '15px' : '10px') : '5px';
+			
+			if (isMajor) {
+				const label = document.createElement('div');
+				label.className = 'compass-label';
+				label.style.left = `${(i + 360) * pixelsPerDegree}px`;
+				
+				// Normalize i to 0-359 for labels
+				let degree = i % 360;
+				if (degree < 0) degree += 360;
+				
+				let text = Math.round(degree).toString().padStart(3, '0');
+				if (Math.round(degree) === 0 || Math.round(degree) === 360) text = 'N';
+				else if (Math.round(degree) === 90) text = 'E';
+				else if (Math.round(degree) === 180) text = 'S';
+				else if (Math.round(degree) === 270) text = 'W';
+				
+				label.innerText = text;
+				this.compassTape.appendChild(label);
+			}
+			
+			this.compassTape.appendChild(tick);
+		}
 	}
 
 	resetTime() {
@@ -212,9 +258,41 @@ export class HUD {
 			this.uiContainer.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translate(${shiftX + this.currentShakeX}px, ${shiftY + this.currentShakeY}px) scale(${scale})`;
 		}
 
-		// 3. Update Speed & Alt
+		// 3. Update Speed & Alt & Heading
 		this.speedElem.innerText = Math.round(state.speed).toString().padStart(3, '0');
 		
+		// Heading mapping: state.heading is already Navigation-style (CW, N=0, E=90)
+		let compassHeading = this.smoothedHeading; 
+		while (compassHeading < 0) compassHeading += 360;
+		while (compassHeading >= 360) compassHeading -= 360;
+
+		if (this.headingDisplay) {
+			let displayHeading = Math.round(compassHeading);
+			if (displayHeading === 360) displayHeading = 0;
+			
+			let cardinal = '';
+			if (displayHeading >= 337.5 || displayHeading < 22.5) cardinal = 'N';
+			else if (displayHeading >= 22.5 && displayHeading < 67.5) cardinal = 'NE';
+			else if (displayHeading >= 67.5 && displayHeading < 112.5) cardinal = 'E';
+			else if (displayHeading >= 112.5 && displayHeading < 157.5) cardinal = 'SE';
+			else if (displayHeading >= 157.5 && displayHeading < 202.5) cardinal = 'S';
+			else if (displayHeading >= 202.5 && displayHeading < 247.5) cardinal = 'SW';
+			else if (displayHeading >= 247.5 && displayHeading < 292.5) cardinal = 'W';
+			else if (displayHeading >= 292.5 && displayHeading < 337.5) cardinal = 'NW';
+			
+			this.headingDisplay.innerText = `${displayHeading.toString().padStart(3, '0')} ${cardinal}`;
+		}
+
+		if (this.compassTape) {
+			const pixelsPerDegree = 4;
+			const centerOffset = 160; // Half of 320px container
+			// Our tape starts at -360 deg at 0px.
+			// To center compassHeading, we use (compassHeading - (-360)) * pixelsPerDegree
+			const targetPosOnTape = (compassHeading + 360) * pixelsPerDegree;
+			const offset = centerOffset - targetPosOnTape;
+			this.compassTape.style.transform = `translateX(${offset}px)`;
+		}
+
 		// Convert meters to feet, ensure non-negative for display, and use 5 digits for alt
 		const altFeet = Math.max(0, Math.round(state.alt * 3.28084));
 		this.altElem.innerText = altFeet.toString().padStart(5, '0');
