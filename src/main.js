@@ -608,6 +608,7 @@ function setupLocationSearch() {
 	const resultsContainer = document.getElementById('search-results');
 	const instructionText = document.getElementById('instruction-text');
 	const searchToggleBtn = document.getElementById('search-toggle-btn');
+	const originalSearchIcon = searchToggleBtn ? searchToggleBtn.innerHTML : '';
 	let debounceTimer;
 
 	if (searchToggleBtn) {
@@ -637,6 +638,10 @@ function setupLocationSearch() {
 		}
 
 		debounceTimer = setTimeout(async () => {
+			if (searchToggleBtn) {
+				searchToggleBtn.innerHTML = '<div class="loader-spinner"></div>';
+			}
+
 			try {
 				const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
 				const data = await response.json();
@@ -709,6 +714,10 @@ function setupLocationSearch() {
 				}
 			} catch (error) {
 				console.error('Search error:', error);
+			} finally {
+				if (searchToggleBtn) {
+					searchToggleBtn.innerHTML = originalSearchIcon;
+				}
 			}
 		}, 500);
 	});

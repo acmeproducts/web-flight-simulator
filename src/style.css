@@ -382,6 +382,7 @@ html {
 	height: 50px;
 	box-sizing: border-box;
 	width: 500px;
+	user-select: none;
 }
 
 #locationSearch {
@@ -395,11 +396,12 @@ html {
 	text-align: center;
 	outline: none;
 	display: none;
+	user-select: text;
 }
 
 #search-results {
 	position: absolute;
-	top: 60px;
+	top: 55px;
 	left: 0;
 	width: 500px;
 	max-height: 300px;
@@ -432,6 +434,21 @@ html {
 #search-toggle-btn:hover {
 	background: #0f0;
 	color: #000;
+}
+
+.loader-spinner {
+	width: 20px;
+	height: 20px;
+	border: 3px solid rgba(0, 255, 0, 0.3);
+	border-radius: 50%;
+	border-top-color: #0f0;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 #confirmSpawnBtn {
