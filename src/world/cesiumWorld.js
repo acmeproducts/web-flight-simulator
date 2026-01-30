@@ -53,7 +53,6 @@ export function initCesium() {
 		v.scene.screenSpaceCameraController.enableTilt = false;
 		v.scene.screenSpaceCameraController.enableLook = false;
 
-		v.scene.screenSpaceCameraController.minimumZoomDistance = 200;
 		v.scene.screenSpaceCameraController.maximumZoomDistance = 25000000;
 
 		v.scene.globe.tileCacheSize = 2048;
