@@ -47,6 +47,7 @@ html {
 	box-sizing: border-box;
 	padding: 30px;
 	z-index: 10;
+	text-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
 }
 
 #uiContainer.hidden {
@@ -99,6 +100,7 @@ html {
 	text-align: center;
 	background: rgba(0, 255, 0, 0.1);
 	position: relative;
+	box-shadow: 0 0 15px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1);
 }
 
 .value-box::before,
@@ -132,6 +134,7 @@ html {
 	background: rgba(0, 40, 0, 0.3);
 	overflow: hidden;
 	box-sizing: border-box;
+	box-shadow: 0 0 20px rgba(0, 255, 0, 0.15);
 }
 
 #coords {
@@ -140,7 +143,7 @@ html {
 	left: 30px;
 	width: 250px;
 	font-size: 13px;
-	text-shadow: 0 0 5px #000;
+	text-shadow: 0 0 8px rgba(0, 255, 0, 0.6), 0 0 2px #000;
 	background: rgba(0, 40, 0, 0.6);
 	border: 2px solid rgba(0, 255, 0, 0.5);
 	border-bottom: none;
@@ -158,6 +161,7 @@ html {
 	width: 320px;
 	height: 40px;
 	border-bottom: 2px solid rgba(0, 255, 0, 0.8);
+	box-shadow: 0 5px 15px -5px rgba(0, 255, 0, 0.4);
 	overflow: hidden;
 	pointer-events: none;
 	display: flex;
@@ -181,6 +185,7 @@ html {
 	bottom: 0;
 	width: 2px;
 	background: #0f0;
+	box-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
 }
 
 .compass-label {
@@ -198,7 +203,7 @@ html {
 	top: 0;
 	left: 50%;
 	transform: translateX(-50%);
-	width: 4px;
+	width: 3px;
 	height: 100%;
 	background: #0f0;
 	z-index: 10;
@@ -666,7 +671,6 @@ input[type="range"]::-webkit-slider-thumb {
 	box-shadow: none;
 }
 
-/* Helper classes for extracted inline styles */
 .setting-control {
 	display: flex;
 	align-items: center;
@@ -741,7 +745,7 @@ input[type="range"]::-webkit-slider-thumb {
 	transform: translateX(-50%);
 	z-index: 100;
 	display: flex;
-	gap: 10px;
+	gap: 5px;
 	pointer-events: none;
 }
 

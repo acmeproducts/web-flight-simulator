@@ -52,7 +52,7 @@ export class HUD {
 			const isCardinal = i % 90 === 0;
 
 			tick.style.left = `${(i + 360) * pixelsPerDegree}px`;
-			tick.style.height = isMajor ? (isCardinal ? '15px' : '10px') : '5px';
+			tick.style.height = isMajor ? '10px' : '5px';
 
 			if (isMajor) {
 				const label = document.createElement('div');
