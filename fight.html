@@ -1,0 +1,2882 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Web Flight Simulator</title>
+	<style>
+@font-face {
+	font-family: 'AceCombat';
+	src: url('./public/assets/fonts/ACES07_Regular.ttf') format('truetype');
+}
+
+body,
+html {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	background-color: #000;
+	font-family: 'AceCombat', 'Courier New', Courier, monospace;
+}
+
+#cesiumContainer {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	z-index: 1;
+}
+
+#threeContainer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 5;
+}
+
+#threeContainer.hidden {
+	display: none !important;
+}
+
+#uiContainer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	color: #0f0;
+	font-family: 'AceCombat', 'Courier New', Courier, monospace;
+	pointer-events: none;
+	box-sizing: border-box;
+	padding: 30px;
+	z-index: 10;
+	text-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
+}
+
+#uiContainer.hidden {
+	display: block !important;
+	visibility: hidden !important;
+	pointer-events: none !important;
+}
+
+#hud-top-left {
+	position: absolute;
+	top: 30px;
+	left: 30px;
+	font-size: 20px;
+}
+
+#hud-top-right {
+	position: absolute;
+	top: 30px;
+	right: 30px;
+	font-size: 20px;
+	text-align: right;
+}
+
+#hud-speed-box {
+	position: absolute;
+	top: 50%;
+	left: 25%;
+	transform: translateY(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+#hud-alt-box {
+	position: absolute;
+	top: 50%;
+	right: 25%;
+	transform: translateY(-50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.value-box {
+	border: 2px solid #0f0;
+	padding: 5px 15px;
+	font-size: 24px;
+	margin-top: 5px;
+	min-width: 80px;
+	text-align: center;
+	background: rgba(0, 40, 0, 0.25);
+	position: relative;
+	box-shadow: 0 0 15px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1);
+}
+
+.value-box::before,
+.value-box::after {
+	content: '';
+	position: absolute;
+	width: 10px;
+	height: 100%;
+	border-top: 2px solid #0f0;
+	border-bottom: 2px solid #0f0;
+	top: -2px;
+}
+
+.value-box::before {
+	left: -2px;
+	border-left: 2px solid #0f0;
+}
+
+.value-box::after {
+	right: -2px;
+	border-right: 2px solid #0f0;
+}
+
+#minimap-container {
+	position: absolute;
+	bottom: 30px;
+	left: 30px;
+	width: 250px;
+	height: 250px;
+	border: 2px solid rgba(0, 255, 0, 0.5);
+	background: rgba(0, 40, 0, 0.3);
+	overflow: hidden;
+	box-sizing: border-box;
+	box-shadow: 0 0 20px rgba(0, 255, 0, 0.15);
+}
+
+#coords {
+	position: absolute;
+	bottom: 280px;
+	left: 30px;
+	width: 250px;
+	font-size: 13px;
+	text-shadow: 0 0 8px rgba(0, 255, 0, 0.6), 0 0 2px #000;
+	background: rgba(0, 40, 0, 0.5);
+	border: 2px solid rgba(0, 255, 0, 0.5);
+	border-bottom: none;
+	box-sizing: border-box;
+	padding: 4px;
+	text-align: center;
+	letter-spacing: 1px;
+}
+
+#compass-container {
+	position: absolute;
+	top: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 320px;
+	height: 40px;
+	border-bottom: 2px solid rgba(0, 255, 0, 0.8);
+	box-shadow: 0 5px 15px -5px rgba(0, 255, 0, 0.4);
+	overflow: hidden;
+	pointer-events: none;
+	display: flex;
+	mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent);
+	-webkit-mask-image: linear-gradient(to right, transparent, black 25%, black 75%, transparent);
+}
+
+#compass-tape {
+	position: absolute;
+	display: flex;
+	height: 100%;
+	align-items: flex-end;
+	font-size: 12px;
+	color: #0f0;
+	will-change: transform;
+	width: 4320px;
+}
+
+.compass-tick {
+	position: absolute;
+	bottom: 0;
+	width: 2px;
+	background: #0f0;
+	box-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
+}
+
+.compass-label {
+	position: absolute;
+	bottom: 12px;
+	width: 40px;
+	margin-left: -20px;
+	text-align: center;
+	font-family: 'AceCombat', sans-serif;
+	font-size: 11px;
+}
+
+#compass-center-marker {
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 3px;
+	height: 100%;
+	background: #0f0;
+	z-index: 10;
+	box-shadow: 0 0 10px #0f0;
+}
+
+#heading-display {
+	position: absolute;
+	top: 65px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 18px;
+	color: #0f0;
+	text-shadow: 0 0 10px #0f0;
+	font-family: 'AceCombat', sans-serif;
+	background: rgba(0, 40, 0, 0.25);
+	padding: 2px 8px;
+	border: 1px solid rgba(0, 255, 0, 0.3);
+	min-width: 60px;
+	text-align: center;
+}
+
+#minimapCesium {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0.8;
+	pointer-events: none;
+	filter: brightness(0.9) contrast(1.2);
+}
+
+#minimap {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 2;
+	pointer-events: none;
+}
+
+.overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.7);
+	color: #fff;
+	z-index: 100;
+	pointer-events: auto;
+}
+
+.overlay.hidden {
+	display: none !important;
+}
+
+.hidden {
+	display: none !important;
+}
+
+#transition-vignette {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.8) 120%);
+	pointer-events: none;
+	z-index: 8;
+	opacity: 0;
+	transition: opacity 0.6s ease-in-out;
+}
+
+.menu-title {
+	font-family: 'AceCombat', sans-serif;
+	font-size: 48px;
+	margin-bottom: 40px;
+	text-shadow: 0 0 10px #0f0;
+	color: #0f0;
+}
+
+.menu-btn {
+	font-family: 'AceCombat', sans-serif;
+	background: transparent;
+	border: 2px solid #0f0;
+	color: #0f0;
+	padding: 15px 40px;
+	font-size: 24px;
+	cursor: pointer;
+	margin: 10px;
+	width: 250px;
+	transition: all 0.3s;
+	text-align: center;
+}
+
+.menu-btn:hover {
+	background: #0f0;
+	color: #000;
+	box-shadow: 0 0 20px #0f0;
+}
+
+#respawnBtn {
+	border-color: #f00;
+	color: #f00;
+	animation: blink-red 1s infinite alternate;
+}
+
+#respawnBtn:hover {
+	background: #f00 !important;
+	color: #000 !important;
+	border-color: #f00 !important;
+	box-shadow: 0 0 25px #f00;
+	animation: none;
+}
+
+@keyframes blink-red {
+	from {
+		background: rgba(255, 0, 0, 0.1);
+		box-shadow: 0 0 5px #f00;
+	}
+
+	to {
+		background: rgba(255, 0, 0, 0.6);
+		box-shadow: 0 0 25px #f00;
+	}
+}
+
+@keyframes blink-green {
+	from {
+		background: rgba(0, 40, 0, 0.4);
+		box-shadow: 0 0 5px #0f0;
+	}
+
+	to {
+		background: rgba(0, 255, 0, 0.4);
+		box-shadow: 0 0 20px #0f0;
+	}
+}
+
+#search-results div {
+	padding: 10px;
+	cursor: pointer;
+	border-bottom: 1px solid rgba(0, 255, 0, 0.3);
+	transition: background 0.2s;
+	font-size: 14px;
+}
+
+#search-results div:hover {
+	background: rgba(0, 255, 0, 0.2);
+}
+
+#search-results div:last-child {
+	border-bottom: none;
+}
+
+#spawn-instruction {
+	font-family: 'AceCombat', sans-serif;
+	background: rgba(0, 40, 0, 0.8);
+	border: 1px solid #0f0;
+	padding: 10px 20px;
+	color: #0f0;
+	pointer-events: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	white-space: nowrap;
+	height: 50px;
+	box-sizing: border-box;
+	width: 500px;
+	user-select: none;
+}
+
+#locationSearch {
+	width: 100%;
+	height: 100%;
+	background: transparent;
+	border: none;
+	color: #0f0;
+	font-family: 'AceCombat';
+	font-size: 16px;
+	text-align: center;
+	outline: none;
+	display: none;
+	user-select: text;
+}
+
+#search-results {
+	position: absolute;
+	top: 55px;
+	left: 0;
+	width: 500px;
+	max-height: 300px;
+	overflow-y: auto;
+	background: rgba(0, 20, 0, 0.9);
+	border: 1px solid #0f0;
+	display: none;
+	box-sizing: border-box;
+	color: #0f0;
+	font-family: 'AceCombat';
+	pointer-events: auto;
+	z-index: 101;
+}
+
+#search-toggle-btn {
+	width: 50px;
+	height: 50px;
+	background: rgba(0, 40, 0, 0.8);
+	border: 1px solid #0f0;
+	color: #0f0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	pointer-events: auto;
+	transition: all 0.3s;
+	box-sizing: border-box;
+}
+
+#search-toggle-btn:hover {
+	background: #0f0;
+	color: #000;
+}
+
+.loader-spinner {
+	width: 20px;
+	height: 20px;
+	border: 3px solid rgba(0, 255, 0, 0.3);
+	border-radius: 50%;
+	border-top-color: #0f0;
+	animation: spin 1s linear infinite;
+}
+
+#search-toggle-btn:hover .loader-spinner,
+#confirmSpawnBtn:hover .loader-spinner {
+	border-color: rgba(0, 0, 0, 0.2);
+	border-top-color: #000;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+#confirmSpawnBtn {
+	background: rgba(0, 40, 0, 0.8) !important;
+	animation: blink-green 1s infinite alternate;
+	width: fit-content;
+}
+
+#confirmSpawnBtn:hover {
+	background: #0f0 !important;
+	color: #000 !important;
+	animation: none;
+}
+
+#spawnInstruction {
+	pointer-events: none !important;
+}
+
+#spawnInstruction button,
+#spawnInstruction input,
+#spawnInstruction #search-results {
+	pointer-events: auto !important;
+}
+
+#weapon-container {
+	position: absolute;
+	bottom: 30px;
+	right: 30px;
+	text-align: right;
+	font-size: 18px;
+}
+
+#game-credits {
+	position: absolute;
+	bottom: 30px;
+	left: 50%;
+	transform: translateX(-50%);
+	font-size: 12px;
+	color: rgba(0, 255, 0, 0.8);
+	text-align: center;
+	pointer-events: auto;
+	z-index: 1000;
+	font-family: 'AceCombat', sans-serif;
+}
+
+#game-credits a {
+	color: rgba(0, 255, 0, 0.8);
+	text-decoration: none;
+	border-bottom: 1px solid rgba(0, 255, 0, 0.4);
+	transition: color 0.3s;
+}
+
+#game-credits a:hover {
+	color: #0f0;
+}
+
+.weapon-info span {
+	display: inline-block;
+	width: 50px;
+	text-align: right;
+}
+
+@keyframes blink {
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.3;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}
+
+.modal {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 80%;
+	max-width: 600px;
+	max-height: 80vh;
+	background: rgba(0, 10, 0, 0.95);
+	border: 2px solid #0f0;
+	color: #0f0;
+	padding: 20px;
+	z-index: 200;
+	overflow-y: auto;
+	box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
+	font-family: 'AceCombat', 'Courier New', Courier, monospace;
+}
+
+.modal-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 2px solid #0f0;
+	padding-bottom: 10px;
+	margin-bottom: 20px;
+}
+
+.modal-title {
+	font-size: 24px;
+	text-transform: uppercase;
+}
+
+.close-modal {
+	background: transparent;
+	border: 1px solid #0f0;
+	color: #0f0;
+	cursor: pointer;
+	padding: 5px 10px;
+	font-family: 'AceCombat', sans-serif;
+}
+
+.close-modal:hover {
+	background: #0f0;
+	color: #000;
+}
+
+.modal-body {
+	line-height: 1.6;
+	font-size: 14px;
+}
+
+.modal-body h3 {
+	margin-top: 20px;
+	border-left: 4px solid #0f0;
+	padding-left: 10px;
+}
+
+.control-grid {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+	gap: 5px;
+	margin: 10px 0;
+}
+
+.key {
+	color: #fff;
+}
+
+.setting-item {
+	display: grid;
+	grid-template-columns: 1fr 2fr;
+	gap: 5px;
+	margin: 10px 0;
+	align-items: center;
+}
+
+.setting-item span {
+	font-size: 16px;
+	color: #fff;
+}
+
+.setting-item select {
+	background: #000;
+	color: #0f0;
+	border: 1px solid #0f0;
+	padding: 5px;
+	font-family: 'AceCombat', sans-serif;
+	cursor: pointer;
+}
+
+.switch {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 22px;
+}
+
+.switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.slider-toggle {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #222;
+	transition: .4s;
+	border: 1px solid #0f0;
+}
+
+.slider-toggle:before {
+	position: absolute;
+	content: "";
+	height: 14px;
+	width: 14px;
+	left: 3px;
+	bottom: 3px;
+	background-color: #0f0;
+	transition: .4s;
+}
+
+input:checked+.slider-toggle {
+	background-color: rgba(0, 255, 0, 0.3);
+}
+
+input:checked+.slider-toggle:before {
+	transform: translateX(22px);
+}
+
+input[type="range"] {
+	-webkit-appearance: none;
+	appearance: none;
+	background: #222;
+	height: 6px;
+	border: 1px solid #0f0;
+	outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	appearance: none;
+	width: 15px;
+	height: 15px;
+	background: #0f0;
+	cursor: pointer;
+}
+
+.menu-btn.disabled {
+	border-color: #444;
+	color: #444;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.menu-btn.disabled:hover {
+	background: transparent;
+	color: #444;
+	box-shadow: none;
+}
+
+.setting-control {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex: 1;
+}
+
+.setting-slider {
+	flex: 1;
+}
+
+.flex-1 {
+	flex: 1;
+}
+
+.setting-value {
+	width: 30px;
+}
+
+.modal-actions {
+	margin-top: 30px;
+	display: flex;
+	justify-content: center;
+}
+
+.btn-primary {
+	padding: 10px 30px;
+	font-size: 18px;
+}
+
+.modal-body-centered {
+	text-align: center;
+}
+
+.accent-link {
+	color: #0f0;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(0, 255, 0, 0.4);
+}
+
+.bio-layout {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+}
+
+.bio-avatar {
+	width: 150px;
+	height: 180px;
+	object-fit: cover;
+	border: 2px solid #0f0;
+	background: #000;
+}
+
+.no-margin-top {
+	margin-top: 0px;
+}
+
+.margin-top-md {
+	margin-top: 15px;
+}
+
+.crash-header {
+	color: #f00;
+	text-shadow: 0 0 10px #f00;
+}
+
+.spawn-hud-top {
+	position: absolute;
+	top: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 100;
+	display: flex;
+	gap: 5px;
+	pointer-events: none;
+}
+
+.spawn-confirm-btn {
+	position: absolute;
+	bottom: 50px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 100;
+}
+
+
+/* Mobile-first adjustments */
+@media (max-width: 768px) {
+	#uiContainer {
+		padding: 16px;
+	}
+	#hud-top-left,
+	#hud-top-right {
+		font-size: 14px;
+		top: 16px;
+		left: 16px;
+		right: 16px;
+	}
+	#hud-top-right {
+		left: auto;
+		right: 16px;
+	}
+	#hud-speed-box,
+	#hud-alt-box {
+		font-size: 14px;
+	}
+	.value-box {
+		font-size: 18px;
+		min-width: 60px;
+		padding: 4px 10px;
+	}
+	#minimap-container {
+		width: 160px;
+		height: 160px;
+		left: 16px;
+		bottom: 16px;
+	}
+	#coords {
+		width: 160px;
+		left: 16px;
+		bottom: 182px;
+		font-size: 10px;
+	}
+	#compass-container {
+		width: 220px;
+		height: 32px;
+	}
+	#heading-display {
+		font-size: 16px;
+		top: 60px;
+	}
+	.menu-title {
+		font-size: 24px;
+	}
+	.menu-btn {
+		font-size: 14px;
+		padding: 10px 18px;
+	}
+	#spawn-instruction {
+		font-size: 12px;
+		max-width: 90vw;
+	}
+	#locationSearch {
+		width: 90vw;
+	}
+}
+
+@media (min-width: 1024px) {
+	#uiContainer {
+		padding: 30px;
+	}
+}
+</style>
+</head>
+
+<body>
+	<div id="cesiumContainer"></div>
+	<div id="threeContainer"></div>
+
+	<div id="mainMenu" class="overlay">
+		<h1 class="menu-title">WEB FLIGHT SIMULATOR</h1>
+		<button id="startBtn" class="menu-btn">PLAY</button>
+		<button id="optionsBtn" class="menu-btn">OPTIONS</button>
+		<button id="helpBtn" class="menu-btn">HELP</button>
+		<button id="creditsBtn" class="menu-btn">CREDITS</button>
+		<button id="aboutBtn" class="menu-btn">ABOUT ME</button>
+	</div>
+
+	<div id="optionsModal" class="modal hidden">
+		<div class="modal-header">
+			<div class="modal-title">System Settings</div>
+			<button class="close-modal">X</button>
+		</div>
+		<div class="modal-body">
+			<h3>Graphics Settings</h3>
+			<div class="setting-item">
+				<span>Graphics Quality</span>
+				<select id="graphicsQuality">
+					<option value="low">Low (High Perf)</option>
+					<option value="medium" selected>Medium (Balanced)</option>
+					<option value="high">High (High Quality)</option>
+				</select>
+			</div>
+			<div class="setting-item">
+				<span>Anti-Aliasing (FXAA)</span>
+				<label class="switch">
+					<input type="checkbox" id="antialiasing" checked>
+					<span class="slider-toggle"></span>
+				</label>
+			</div>
+			<div class="setting-item">
+				<span>Fog Effects</span>
+				<label class="switch">
+					<input type="checkbox" id="fogEffects" checked>
+					<span class="slider-toggle"></span>
+				</label>
+			</div>
+
+			<h3>Simulation Settings</h3>
+			<div class="setting-item">
+				<span>Field of View (FOV)</span>
+				<div class="setting-control">
+					<input type="range" id="fovSlider" min="50" max="110" value="75" class="setting-slider">
+					<span id="fovValue" class="setting-value">75</span>
+				</div>
+			</div>
+			<div class="setting-item">
+				<span>Mouse Sensitivity</span>
+				<div class="setting-control">
+					<input type="range" id="sensitivitySlider" min="0.05" max="1.0" step="0.05" value="0.2" class="setting-slider">
+					<span id="sensitivityValue" class="setting-value">0.2</span>
+				</div>
+			</div>
+			<div class="setting-item">
+				<span>Show HUD Controls</span>
+				<label class="switch">
+					<input type="checkbox" id="showHud" checked>
+					<span class="slider-toggle"></span>
+				</label>
+			</div>
+
+			<div class="setting-item">
+				<span>Minimap Range</span>
+				<select id="minimapRange">
+					<option value="1" selected>1km (Default)</option>
+					<option value="5">5km (Tactical)</option>
+					<option value="10">10km (Regional)</option>
+				</select>
+			</div>
+
+			<div class="modal-actions">
+				<button id="saveOptionsBtn" class="menu-btn btn-primary">SAVE & APPLY</button>
+			</div>
+		</div>
+	</div>
+
+	<div id="helpModal" class="modal hidden">
+		<div class="modal-header">
+			<div class="modal-title">Flight Manual</div>
+			<button class="close-modal">X</button>
+		</div>
+		<div class="modal-body">
+			<h3>Basic Controls</h3>
+			<div class="control-grid">
+				<div class="key">ARROW UP / DOWN</div>
+				<div>Pitch Down / Up</div>
+				<div class="key">ARROW LEFT / RIGHT</div>
+				<div>Roll Left / Right</div>
+				<div class="key">A / D</div>
+				<div>Yaw (Rudder)</div>
+				<div class="key">W / SHIFT</div>
+				<div>Increase Throttle</div>
+				<div class="key">S / CTRL</div>
+				<div>Decrease Throttle</div>
+				<div class="key">SPACE</div>
+				<div>Afterburner (Boost)</div>
+			</div>
+			<h3>Camera Controls</h3>
+			<div class="control-grid">
+				<div class="key">LEFT DRAG</div>
+				<div>Orbit Camera (Spectate)</div>
+			</div>
+			<h3>System</h3>
+			<div class="control-grid">
+				<div class="key">ESC</div>
+				<div>Pause Menu</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="creditsModal" class="modal hidden">
+		<div class="modal-header">
+			<div class="modal-title">Project Credits</div>
+			<button class="close-modal">X</button>
+		</div>
+		<div class="modal-body modal-body-centered">
+			<p>Developed by <strong><a href="https://tarmizi.id" target="_blank" class="accent-link">Dimar Tarmizi</a></strong></p>
+			<p>Built with CesiumJS & Three.js</p>
+			<p>3D Model "Low poly F-15" by SIpriv, licensed under CC BY 4.0.
+		</div>
+	</div>
+
+	<div id="aboutBtnModal" class="modal hidden">
+		<div class="modal-header">
+			<div class="modal-title">Developer Bio</div>
+			<button class="close-modal">X</button>
+		</div>
+		<div class="modal-body">
+			<div class="bio-layout">
+				<img src="./public/assets/images/dimar-tarmizi.jpg" alt="Dimar Tarmizi" class="bio-avatar">
+				<div class="flex-1">
+					<p class="no-margin-top"><strong>Name:</strong> <a href="https://tarmizi.id" target="_blank" class="accent-link">Dimar Tarmizi</a></p>
+					<p><strong>Spec:</strong> Full-stack Web Software Engineer</p>
+					<p class="margin-top-md">Full-stack web engineer focused on building scalable web applications, robust back-end systems, and dynamic front-end interfaces. Experienced in end-to-end development, deployment, server management, and VPS/IaaS environments to ensure performance and reliability.</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div id="pauseMenu" class="overlay hidden">
+		<h2 class="menu-title">PAUSED</h2>
+		<button id="resumeBtn" class="menu-btn">RESUME</button>
+		<button id="pauseOptionsBtn" class="menu-btn">OPTIONS</button>
+		<button id="restartBtn" class="menu-btn">RESTART</button>
+		<button id="quitBtn" class="menu-btn">QUIT TO MENU</button>
+	</div>
+
+	<div id="crashMenu" class="overlay hidden">
+		<h2 class="menu-title crash-header">AIRCRAFT DESTROYED</h2>
+		<button id="respawnBtn" class="menu-btn">RESPAWN</button>
+	</div>
+
+	<div id="spawnInstruction" class="hidden">
+		<div id="spawn-top-ui" class="spawn-hud-top">
+			<div id="spawn-instruction">
+				<span id="instruction-text">TAP ANYWHERE ON THE MAP TO CHOOSE SPAWN POINT</span>
+				<input type="text" id="locationSearch" placeholder="ENTER LOCATION NAME...">
+				<div id="search-results">
+				</div>
+			</div>
+			<div id="search-toggle-btn" title="Toggle Search">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="11" cy="11" r="8"></circle>
+					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+				</svg>
+			</div>
+		</div>
+
+		<button id="confirmSpawnBtn" class="menu-btn hidden spawn-confirm-btn">CONFIRM SPAWN POINT</button>
+	</div>
+
+	<div id="uiContainer" class="hidden">
+		<div id="compass-container">
+			<div id="compass-center-marker"></div>
+			<div id="compass-tape"></div>
+		</div>
+		<div id="heading-display">000</div>
+
+		<div id="hud-top-left">
+			TIME <span id="time">00:00:00</span><br>
+			SCORE <span id="score">000000</span>
+		</div>
+
+		<div id="hud-top-right">
+			FPS <span id="fps">60</span><br>
+			<span id="local-datetime">01 JAN 26 | 00:00:00</span>
+		</div>
+
+		<div id="hud-speed-box">
+			<div class="label">SPEED</div>
+			<div class="value-box">
+				<span id="speed">0</span>
+			</div>
+		</div>
+
+		<div id="hud-alt-box">
+			<div class="label">ALT</div>
+			<div class="value-box">
+				<span id="altitude">0</span>
+			</div>
+		</div>
+
+		<div id="coords">0.0000, 0.0000</div>
+
+		<div id="minimap-container">
+			<div id="minimapCesium"></div>
+			<canvas id="minimap"></canvas>
+		</div>
+
+		<div id="game-credits">
+			WEB FLIGHT SIMULATOR | CREATED BY <a href="https://tarmizi.id" target="_blank">DIMAR TARMIZI</a> |
+			<a href="https://github.com/dimartarmizi/web-flight-simulator" target="_blank">GITHUB REPOSITORY</a>
+		</div>
+	</div>
+
+	<div id="transition-vignette"></div>
+
+<script>
+window.CESIUM_BASE_URL = 'https://cdn.jsdelivr.net/npm/cesium@1.114.0/Build/Cesium/';
+</script>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js';
+
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/loaders/GLTFLoader.js';
+
+import * as Cesium from 'https://cdn.jsdelivr.net/npm/cesium@1.114.0/Build/Cesium/Cesium.js';
+
+
+
+
+let viewer;
+let miniViewer;
+
+function initCesium() {
+	viewer = new Cesium.Viewer("cesiumContainer", {
+		terrain: Cesium.Terrain.fromWorldTerrain(),
+		timeline: false,
+		animation: false,
+		baseLayerPicker: false,
+		geocoder: false,
+		homeButton: false,
+		infoBox: false,
+		sceneModePicker: false,
+		selectionIndicator: false,
+		navigationHelpButton: false,
+		fullscreenButton: false,
+		shouldAnimate: false,
+	});
+
+	miniViewer = new Cesium.Viewer("minimapCesium", {
+		terrain: null,
+		timeline: false,
+		animation: false,
+		baseLayerPicker: false,
+		geocoder: false,
+		homeButton: false,
+		infoBox: false,
+		sceneModePicker: false,
+		selectionIndicator: false,
+		navigationHelpButton: false,
+		fullscreenButton: false,
+		shouldAnimate: false,
+		skyBox: false,
+		skyAtmosphere: false,
+		contextOptions: {
+			webgl: {
+				preserveDrawingBuffer: true
+			}
+		}
+	});
+
+	[viewer, miniViewer].forEach(v => {
+		v.scene.requestRenderMode = true;
+		v.scene.maximumRenderTimeChange = Infinity;
+		v.scene.globe.maximumScreenSpaceError = 2;
+		v.resolutionScale = 0.75;
+
+		v.scene.screenSpaceCameraController.enableRotate = false;
+		v.scene.screenSpaceCameraController.enableTranslate = false;
+		v.scene.screenSpaceCameraController.enableZoom = false;
+		v.scene.screenSpaceCameraController.enableTilt = false;
+		v.scene.screenSpaceCameraController.enableLook = false;
+
+		v.scene.screenSpaceCameraController.maximumZoomDistance = 25000000;
+
+		v.scene.globe.tileCacheSize = 2048;
+		v.scene.globe.preloadAncestors = true;
+		v.scene.globe.preloadSiblings = true;
+		v.scene.globe.loadingDescendantLimit = 20;
+
+		v.scene.globe.skipLevelOfDetail = true;
+		v.scene.globe.baseScreenSpaceError = 1024;
+		v.scene.globe.skipScreenSpaceErrorFactor = 16;
+		v.scene.globe.skipLevels = 1;
+
+		v._cesiumWidget._creditContainer.style.display = "none";
+	});
+
+	miniViewer.scene.globe.enableLighting = false;
+	miniViewer.scene.globe.showGroundAtmosphere = false;
+	miniViewer.scene.fog.enabled = false;
+	miniViewer.scene.highDynamicRange = false;
+	miniViewer.scene.postProcessStages.fxaa.enabled = false;
+	miniViewer.resolutionScale = 1.0;
+	miniViewer.scene.globe.maximumScreenSpaceError = 2;
+	miniViewer.scene.globe.baseColor = Cesium.Color.BLACK;
+	if (miniViewer.scene.skyAtmosphere) miniViewer.scene.skyAtmosphere.show = false;
+
+	viewer.scene.globe.enableLighting = true;
+	viewer.scene.highDynamicRange = false;
+	viewer.scene.postProcessStages.fxaa.enabled = true;
+	viewer.scene.skyAtmosphere = new Cesium.SkyAtmosphere();
+
+	viewer.scene.fog.enabled = true;
+	viewer.scene.fog.density = 0.0001;
+
+	setControlsEnabled(false);
+
+	return viewer;
+}
+
+function setControlsEnabled(enabled) {
+	if (!viewer) return;
+	const ctrl = viewer.scene.screenSpaceCameraController;
+	ctrl.enableRotate = enabled;
+	ctrl.enableTranslate = enabled;
+	ctrl.enableZoom = enabled;
+	ctrl.enableTilt = enabled;
+	ctrl.enableLook = enabled;
+}
+
+function setCameraToPlane(lon, lat, alt, heading, pitch, roll) {
+	if (!viewer) return;
+
+	viewer.camera.setView({
+		destination: Cesium.Cartesian3.fromDegrees(lon, lat, alt),
+		orientation: {
+			heading: Cesium.Math.toRadians(heading),
+			pitch: Cesium.Math.toRadians(pitch),
+			roll: Cesium.Math.toRadians(roll)
+		}
+	});
+
+	viewer.scene.requestRender();
+}
+
+function setMinimapCamera(lon, lat, altitude, heading) {
+	if (!miniViewer) return;
+
+	if (miniViewer.canvas.width === 0 || miniViewer.canvas.height === 0) {
+		return;
+	}
+
+	miniViewer.camera.setView({
+		destination: Cesium.Cartesian3.fromDegrees(lon, lat, altitude),
+		orientation: {
+			heading: Cesium.Math.toRadians(heading),
+			pitch: Cesium.Math.toRadians(-90),
+			roll: 0
+		}
+	});
+
+	miniViewer.scene.requestRender();
+}
+
+function getViewer() {
+	return viewer;
+}
+
+function getMiniViewer() {
+	return miniViewer;
+}
+
+
+class PlanePhysics {
+	constructor() {
+		this.speed = 100;
+		this.maxSpeed = 1000;
+		this.minSpeed = 100;
+		this.throttle = 0.5;
+		this.enginePower = 1.2;
+		this.drag = 0.005;
+		this.liftFactor = 0.002;
+		this.gravity = 9.8;
+
+		this.pitch = 0;
+		this.roll = 0;
+		this.heading = 0;
+
+		this.pitchRate = 1.2;
+		this.rollRate = 2.5;
+		this.yawRate = 0.5;
+
+		this.isBoosting = false;
+		this.boostTimeRemaining = 0;
+		this.boostDuration = 3.0;
+		this.boostMultiplier = 1.5;
+		this.boostRotations = 2;
+		this.boostPressed = false;
+
+		this.quaternion = new THREE.Quaternion();
+	}
+
+	boost() {
+		if (this.boostTimeRemaining <= 0) {
+			this.isBoosting = true;
+			this.boostTimeRemaining = this.boostDuration;
+		}
+	}
+
+	reset(lon, lat, alt, heading, pitch, roll) {
+		this.heading = heading || 0;
+		this.pitch = pitch || 0;
+		this.roll = roll || 0;
+
+		const euler = new THREE.Euler(
+			THREE.MathUtils.degToRad(this.pitch),
+			THREE.MathUtils.degToRad(this.heading),
+			THREE.MathUtils.degToRad(this.roll),
+			'YXZ'
+		);
+		this.quaternion.setFromEuler(euler);
+	}
+
+	update(input, dt) {
+		if (this.boostTimeRemaining > 0) {
+			this.boostTimeRemaining -= dt;
+			if (this.boostTimeRemaining <= 0) {
+				this.isBoosting = false;
+				this.boostTimeRemaining = 0;
+			}
+		}
+
+		if (input.boost) {
+			if (!this.boostPressed && !this.isBoosting) {
+				this.boost();
+			}
+			this.boostPressed = true;
+		} else {
+			this.boostPressed = false;
+		}
+
+		this.throttle = input.throttle;
+		let targetSpeed = this.minSpeed + (this.throttle * (this.maxSpeed - this.minSpeed));
+
+		if (this.isBoosting) {
+			targetSpeed = this.maxSpeed * this.boostMultiplier;
+		}
+
+		this.speed += (targetSpeed - this.speed) * dt * (this.isBoosting ? 4 : 2);
+
+		const controlEffectiveness = this.speed > this.minSpeed ? 1 : (this.speed / this.minSpeed);
+
+		const localPitch = input.pitch * this.pitchRate * dt * controlEffectiveness;
+		const localRoll = input.roll * this.rollRate * dt * controlEffectiveness;
+		const localYaw = input.yaw * this.yawRate * dt * controlEffectiveness;
+
+		const qPitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), localPitch);
+		const qRoll = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), localRoll);
+		const qYaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), localYaw);
+
+		this.quaternion.multiply(qYaw);
+		this.quaternion.multiply(qPitch);
+		this.quaternion.multiply(qRoll);
+
+		this.quaternion.normalize();
+
+		const euler = new THREE.Euler().setFromQuaternion(this.quaternion, 'YXZ');
+
+		this.heading = THREE.MathUtils.radToDeg(euler.y);
+		this.pitch = THREE.MathUtils.radToDeg(euler.x);
+		this.roll = THREE.MathUtils.radToDeg(euler.z);
+
+		return {
+			speed: this.speed,
+			pitch: this.pitch,
+			roll: this.roll,
+			heading: this.heading,
+			isBoosting: this.isBoosting,
+			boostTimeRemaining: this.boostTimeRemaining,
+			boostDuration: this.boostDuration,
+			boostRotations: this.boostRotations
+		};
+	}
+}
+
+class PlaneController {
+	constructor() {
+		this.keys = {};
+		window.addEventListener('keydown', (e) => this.keys[e.key.toLowerCase()] = true);
+		window.addEventListener('keyup', (e) => this.keys[e.key.toLowerCase()] = false);
+
+		this.mouseDragging = false;
+		this.mouseDeltaX = 0;
+		this.mouseDeltaY = 0;
+		this.lastMouseX = 0;
+		this.lastMouseY = 0;
+
+		window.addEventListener('mousedown', (e) => {
+			if (e.button === 0) {
+				this.mouseDragging = true;
+				this.lastMouseX = e.clientX;
+				this.lastMouseY = e.clientY;
+			}
+		});
+
+		window.addEventListener('mousemove', (e) => {
+			if (this.mouseDragging) {
+				this.mouseDeltaX += e.clientX - this.lastMouseX;
+				this.mouseDeltaY += e.clientY - this.lastMouseY;
+				this.lastMouseX = e.clientX;
+				this.lastMouseY = e.clientY;
+			}
+		});
+
+		window.addEventListener('mouseup', (e) => {
+			if (e.button === 0) {
+				this.mouseDragging = false;
+			}
+		});
+
+		this.input = {
+			throttle: 0,
+			pitch: 0,
+			roll: 0,
+			yaw: 0,
+			boost: false,
+			cameraYaw: 0,
+			cameraPitch: 0,
+			isDragging: false
+		};
+
+		this.sensitivity = 0.2;
+	}
+
+	setSensitivity(value) {
+		this.sensitivity = value;
+	}
+
+	update() {
+		this.input.boost = !!this.keys[' '];
+		this.input.isDragging = this.mouseDragging;
+
+		const accelRate = 0.5;
+		if (this.keys['w'] || this.keys['shift']) {
+			this.input.throttle = Math.min(1, this.input.throttle + accelRate * 0.016);
+		} else if (this.keys['s'] || this.keys['control']) {
+			this.input.throttle = Math.max(0, this.input.throttle - accelRate * 0.016);
+		}
+
+		const pitchTarget = (this.keys['arrowup'] ? -1 : (this.keys['arrowdown'] ? 1 : 0));
+		this.input.pitch = this.lerp(this.input.pitch, pitchTarget, 0.1);
+
+		const rollTarget = (this.keys['arrowleft'] ? -1 : (this.keys['arrowright'] ? 1 : 0));
+		this.input.roll = this.lerp(this.input.roll, rollTarget, 0.1);
+
+		const yawTarget = (this.keys['a'] ? -1 : (this.keys['d'] ? 1 : 0));
+		this.input.yaw = this.lerp(this.input.yaw, yawTarget, 0.1);
+
+		if (this.mouseDragging) {
+			this.input.cameraYaw += this.mouseDeltaX * this.sensitivity;
+			this.input.cameraPitch -= this.mouseDeltaY * this.sensitivity;
+
+			this.input.cameraPitch = Math.max(-85, Math.min(85, this.input.cameraPitch));
+
+			this.mouseDeltaX = 0;
+			this.mouseDeltaY = 0;
+		} else {
+			this.input.cameraYaw = this.lerp(this.input.cameraYaw, 0, 0.1);
+			this.input.cameraPitch = this.lerp(this.input.cameraPitch, 0, 0.1);
+		}
+
+		return this.input;
+	}
+
+	reset() {
+		this.input.cameraYaw = 0;
+		this.input.cameraPitch = 0;
+		this.mouseDragging = false;
+		this.mouseDeltaX = 0;
+		this.mouseDeltaY = 0;
+		this.input.throttle = 0;
+		this.input.pitch = 0;
+		this.input.roll = 0;
+		this.input.yaw = 0;
+	}
+
+	lerp(start, end, amt) {
+		return (1 - amt) * start + amt * end;
+	}
+}
+
+
+class JetFlame {
+    constructor() {
+        this.group = new THREE.Group();
+
+        const vertexShader = `
+            varying vec2 vUv;
+            varying vec3 vPosition;
+            void main() {
+                vUv = uv;
+                vPosition = position;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            uniform float time;
+            uniform float throttle;
+            uniform float isBoosting;
+            varying vec2 vUv;
+            varying vec3 vPosition;
+
+            float noise(vec2 p) {
+                return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+            }
+
+            void main() {
+                float v = 1.0 - vUv.y;
+                
+                float activeLen = isBoosting > 0.5 ? 1.3 : (0.3 + throttle * 0.7);
+                float intensity = isBoosting > 0.5 ? 2.0 : (0.6 + throttle * 0.9);
+
+                if (v > activeLen) discard;
+
+                vec3 coreColor = vec3(1.0, 1.0, 0.95); 
+                vec3 midColor = vec3(1.0, 0.4, 0.1);  
+                vec3 outerColor = vec3(0.15, 0.35, 1.0); 
+                
+                if (isBoosting > 0.5) {
+                    midColor = vec3(1.0, 0.5, 0.2); 
+                    outerColor = vec3(0.3, 0.3, 1.0);
+                }
+
+                float radial = length(vPosition.xy);
+                float glow = exp(-radial * 10.0);
+                float core = exp(-radial * 28.0);
+                
+                float shockFreq = 20.0;
+                float shock = pow(max(0.0, sin(v * shockFreq - time * 50.0)), 5.0);
+                shock *= (0.2 + throttle * 0.8 + isBoosting * 0.4);
+                
+                float diamondPos = sin(v * 26.0 - time * 40.0);
+                float diamondMesh = pow(max(0.0, diamondPos), 9.0) * (1.0 - v/activeLen);
+
+                float flicker = 1.0 + 0.18 * noise(vec2(time * 20.0, v * 10.0));
+
+                vec3 finalColor = mix(outerColor * 0.7, midColor, glow);
+                finalColor = mix(finalColor, coreColor, core + diamondMesh * 0.7);
+                
+                finalColor += coreColor * shock * glow;
+
+                float fade = pow(1.0 - v / activeLen, 1.4);
+                float alpha = fade * intensity * (glow * 2.2 + core);
+                alpha = clamp(alpha * flicker, 0.0, 1.0);
+
+                gl_FragColor = vec4(finalColor * intensity, alpha);
+            }
+        `;
+
+        this.uniforms = {
+            time: { value: 0 },
+            throttle: { value: 0 },
+            isBoosting: { value: 0 }
+        };
+
+        const geometry = new THREE.CylinderGeometry(0.1, 0.2, 2, 16, 32, true);
+        geometry.translate(0, -1, 0);
+        geometry.rotateX(-Math.PI / 2);
+
+        this.material = new THREE.ShaderMaterial({
+            uniforms: this.uniforms,
+            vertexShader,
+            fragmentShader,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+
+        this.flame = new THREE.Mesh(geometry, this.material);
+        this.group.add(this.flame);
+
+        this.light = new THREE.PointLight(0xffaa44, 1, 5);
+        this.light.position.set(0, 0, 0);
+        this.group.add(this.light);
+    }
+
+    update(throttle, isBoosting, time, dt) {
+        this.uniforms.throttle.value = throttle;
+        this.uniforms.isBoosting.value = isBoosting ? 1.0 : 0.0;
+        this.uniforms.time.value = time;
+
+        const s = isBoosting ? 2.2 : (0.6 + throttle * 1.2);
+        
+        const widthScale = 1.1 + throttle * 0.4;
+        this.flame.scale.set(widthScale, widthScale, s);
+        
+        this.light.intensity = isBoosting ? 7.5 : (1.0 + throttle * 2.5);
+        this.light.color.setHex(isBoosting ? 0x9999ff : 0xff7722);
+    }
+}
+
+
+function movePosition(lon, lat, alt, heading, pitch, distance) {
+	const headingRad = Cesium.Math.toRadians(heading);
+	const pitchRad = Cesium.Math.toRadians(pitch);
+
+	const R = 6371000;
+
+	const dLat = (distance * Math.cos(headingRad) * Math.cos(pitchRad)) / R;
+	const dLon = (distance * Math.sin(headingRad) * Math.cos(pitchRad)) / (R * Math.cos(Cesium.Math.toRadians(lat)));
+	const dAlt = distance * Math.sin(pitchRad);
+
+	return {
+		lon: lon + Cesium.Math.toDegrees(dLon),
+		lat: lat + Cesium.Math.toDegrees(dLat),
+		alt: alt + dAlt
+	};
+}
+
+
+class HUD {
+	constructor() {
+		this.speedElem = document.getElementById('speed');
+		this.altElem = document.getElementById('altitude');
+		this.timeElem = document.getElementById('time');
+		this.scoreElem = document.getElementById('score');
+		this.fpsElem = document.getElementById('fps');
+		this.localDateTimeElem = document.getElementById('local-datetime');
+		this.coordsElem = document.getElementById('coords');
+		this.minimapCanvas = document.getElementById('minimap');
+		this.miniCtx = this.minimapCanvas.getContext('2d');
+		this.uiContainer = document.getElementById('uiContainer');
+		this.compassTape = document.getElementById('compass-tape');
+		this.headingDisplay = document.getElementById('heading-display');
+
+		this.vignette = document.getElementById('transition-vignette');
+
+		this.startTime = Date.now();
+
+		this.smoothedPitch = 0;
+		this.smoothedRoll = 0;
+		this.smoothedHeading = 0;
+		this.smoothedThrottle = 0;
+		this.smoothedYaw = 0;
+		this.smoothedBoostScale = 1.0;
+		this.currentShakeX = 0;
+		this.currentShakeY = 0;
+
+		this.minimapRange = 1;
+
+		this.createHorizon();
+		this.createCompass();
+		this.resizeMinimap();
+		window.addEventListener('resize', () => this.resizeMinimap());
+	}
+
+	createCompass() {
+		if (!this.compassTape) return;
+
+		const step = 5;
+		const pixelsPerDegree = 4;
+
+		this.compassTape.innerHTML = '';
+
+		for (let i = -360; i <= 720; i += step) {
+			const tick = document.createElement('div');
+			tick.className = 'compass-tick';
+
+			const isMajor = i % 10 === 0;
+			const isCardinal = i % 90 === 0;
+
+			tick.style.left = `${(i + 360) * pixelsPerDegree}px`;
+			tick.style.height = isMajor ? '10px' : '5px';
+
+			if (isMajor) {
+				const label = document.createElement('div');
+				label.className = 'compass-label';
+				label.style.left = `${(i + 360) * pixelsPerDegree}px`;
+
+				let degree = i % 360;
+				if (degree < 0) degree += 360;
+
+				let text = Math.round(degree).toString().padStart(3, '0');
+				if (Math.round(degree) === 0 || Math.round(degree) === 360) text = 'N';
+				else if (Math.round(degree) === 90) text = 'E';
+				else if (Math.round(degree) === 180) text = 'S';
+				else if (Math.round(degree) === 270) text = 'W';
+
+				label.innerText = text;
+				this.compassTape.appendChild(label);
+			}
+
+			this.compassTape.appendChild(tick);
+		}
+	}
+
+	resetTime() {
+		this.startTime = Date.now();
+	}
+
+	setMinimapRange(range) {
+		this.minimapRange = range;
+	}
+
+	resizeMinimap() {
+		this.minimapCanvas.width = this.minimapCanvas.offsetWidth;
+		this.minimapCanvas.height = this.minimapCanvas.offsetHeight;
+
+		const miniViewer = getMiniViewer();
+		if (miniViewer) {
+			miniViewer.resize();
+		}
+	}
+
+	createHorizon() {
+		if (!document.getElementById('horizon-container')) {
+			const ui = document.getElementById('uiContainer');
+			const horizon = document.createElement('div');
+			horizon.id = 'horizon-container';
+			horizon.style.cssText = `
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: 600px;
+				height: 600px;
+				transform: translate(-50%, -50%);
+				pointer-events: none;
+				overflow: hidden;
+			`;
+
+			const crosshair = document.createElement('div');
+			crosshair.style.cssText = `
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: 40px;
+				height: 2px;
+				background: #0f0;
+				transform: translate(-50%, -50%);
+			`;
+			const innerCross = document.createElement('div');
+			innerCross.style.cssText = `
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				width: 2px;
+				height: 10px;
+				background: #0f0;
+				transform: translate(-50%, -50%);
+			`;
+			crosshair.appendChild(innerCross);
+			horizon.appendChild(crosshair);
+
+			const pitchLines = document.createElement('div');
+			pitchLines.id = 'pitch-lines';
+			pitchLines.style.cssText = `
+				position: absolute;
+				width: 100%;
+				height: 100%;
+			`;
+
+			for (let i = -90; i <= 90; i += 10) {
+				if (i === 0) continue;
+				const line = document.createElement('div');
+				line.style.cssText = `
+					position: absolute;
+					left: 30%;
+					width: 40%;
+					height: 1px;
+					background: rgba(0, 255, 0, 0.5);
+					top: ${50 - i}% ;
+					text-align: center;
+					font-size: 10px;
+				`;
+				line.innerText = i;
+				pitchLines.appendChild(line);
+			}
+
+			horizon.appendChild(pitchLines);
+			ui.appendChild(horizon);
+		}
+	}
+
+	update(state) {
+		const lerpFactor = 0.5;
+
+		const lerpAngle = (current, target, factor) => {
+			let diff = target - current;
+			while (diff < -180) diff += 360;
+			while (diff > 180) diff -= 360;
+			return current + diff * factor;
+		};
+
+		const getAngleDiff = (target, current) => {
+			let diff = target - current;
+			while (diff < -180) diff += 360;
+			while (diff > 180) diff -= 360;
+			return diff;
+		};
+
+		const normalizeAngle = (a) => {
+			while (a <= -180) a += 360;
+			while (a > 180) a -= 360;
+			return a;
+		};
+
+		this.smoothedPitch = lerpAngle(this.smoothedPitch, state.pitch, lerpFactor);
+		this.smoothedRoll = lerpAngle(this.smoothedRoll, state.roll, lerpFactor);
+		this.smoothedHeading = lerpAngle(this.smoothedHeading, state.heading || 0, lerpFactor);
+		this.smoothedThrottle = this.smoothedThrottle + ((state.throttle || 0) - this.smoothedThrottle) * (lerpFactor * 0.4);
+		this.smoothedYaw = this.smoothedYaw + ((state.yaw || 0) - this.smoothedYaw) * lerpFactor;
+
+		this.smoothedPitch = normalizeAngle(this.smoothedPitch);
+		this.smoothedRoll = normalizeAngle(this.smoothedRoll);
+		this.smoothedHeading = normalizeAngle(this.smoothedHeading);
+
+		const baseZoom = this.minimapRange * 1500;
+		const speedFactor = this.minimapRange * 2;
+		let zoomAlt = baseZoom + (state.speed * speedFactor);
+		if (state.isBoosting) zoomAlt *= 1.2;
+		this.currentZoom = zoomAlt;
+		setMinimapCamera(state.lon, state.lat, zoomAlt, this.smoothedHeading);
+
+		const isBoosting = state.isBoosting || false;
+		if (this.vignette) {
+			this.vignette.style.opacity = isBoosting ? "1" : "0";
+		}
+
+		const pitchDiff = getAngleDiff(state.pitch, this.smoothedPitch);
+		const rollDiff = getAngleDiff(state.roll, this.smoothedRoll);
+		const yawDiff = (state.yaw || 0) - this.smoothedYaw;
+		const throttleDiff = (state.throttle || 0) - this.smoothedThrottle;
+
+		if (this.uiContainer) {
+			const maxTilt = 15;
+			const tiltX = Math.max(-maxTilt, Math.min(maxTilt, pitchDiff * 0.8));
+			const tiltY = Math.max(-maxTilt, Math.min(maxTilt, -rollDiff * 0.3 + yawDiff * 5.0));
+
+			const maxShift = 50;
+			const shiftX = Math.max(-maxShift, Math.min(maxShift, -rollDiff * 1.5 - yawDiff * 20.0));
+			const shiftY = Math.max(-maxShift, Math.min(maxShift, pitchDiff * 3.0 + throttleDiff * 15.0));
+
+			const targetBoostScale = isBoosting ? 1.02 : 1.0;
+			this.smoothedBoostScale = this.smoothedBoostScale + (targetBoostScale - this.smoothedBoostScale) * 0.1;
+
+			const scale = (1 + (throttleDiff * 0.25)) * this.smoothedBoostScale;
+
+			if (isBoosting) {
+				const time = Date.now() * 0.05;
+				this.currentShakeX = Math.sin(time * 1.5) * 2 + Math.cos(time * 2.1) * 1.5;
+				this.currentShakeY = Math.cos(time * 1.7) * 2 + Math.sin(time * 2.3) * 1.5;
+			} else {
+				this.currentShakeX *= 0.85;
+				this.currentShakeY *= 0.85;
+			}
+
+			this.uiContainer.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translate(${shiftX + this.currentShakeX}px, ${shiftY + this.currentShakeY}px) scale(${scale})`;
+		}
+
+		this.speedElem.innerText = Math.round(state.speed).toString().padStart(3, '0');
+
+		let compassHeading = this.smoothedHeading;
+		while (compassHeading < 0) compassHeading += 360;
+		while (compassHeading >= 360) compassHeading -= 360;
+
+		if (this.headingDisplay) {
+			let displayHeading = Math.round(compassHeading);
+			if (displayHeading === 360) displayHeading = 0;
+
+			let cardinal = '';
+			if (displayHeading >= 337.5 || displayHeading < 22.5) cardinal = 'N';
+			else if (displayHeading >= 22.5 && displayHeading < 67.5) cardinal = 'NE';
+			else if (displayHeading >= 67.5 && displayHeading < 112.5) cardinal = 'E';
+			else if (displayHeading >= 112.5 && displayHeading < 157.5) cardinal = 'SE';
+			else if (displayHeading >= 157.5 && displayHeading < 202.5) cardinal = 'S';
+			else if (displayHeading >= 202.5 && displayHeading < 247.5) cardinal = 'SW';
+			else if (displayHeading >= 247.5 && displayHeading < 292.5) cardinal = 'W';
+			else if (displayHeading >= 292.5 && displayHeading < 337.5) cardinal = 'NW';
+
+			this.headingDisplay.innerText = `${displayHeading.toString().padStart(3, '0')} ${cardinal}`;
+		}
+
+		if (this.compassTape) {
+			const pixelsPerDegree = 4;
+			const centerOffset = 160;
+			const targetPosOnTape = (compassHeading + 360) * pixelsPerDegree;
+			const offset = centerOffset - targetPosOnTape;
+			this.compassTape.style.transform = `translateX(${offset}px)`;
+		}
+
+		const altFeet = Math.max(0, Math.round(state.alt * 3.28084));
+		this.altElem.innerText = altFeet.toString().padStart(5, '0');
+
+		const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+		const h = Math.floor(elapsed / 3600);
+		const m = Math.floor((elapsed % 3600) / 60);
+		const s = elapsed % 60;
+		this.timeElem.innerText = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+
+		const now = new Date();
+		const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+		const tzOffsetHours = Math.round((state.lon || 0) / 15);
+		const localDate = new Date(utc + (3600000 * tzOffsetHours));
+
+		if (this.localDateTimeElem) {
+			const yyyy = localDate.getFullYear();
+			const mm = (localDate.getMonth() + 1).toString().padStart(2, '0');
+			const dd = localDate.getDate().toString().padStart(2, '0');
+			const hh = localDate.getHours().toString().padStart(2, '0');
+			const min = localDate.getMinutes().toString().padStart(2, '0');
+			const ss = localDate.getSeconds().toString().padStart(2, '0');
+
+			this.localDateTimeElem.innerText = `${yyyy}-${mm}-${dd}T${hh}:${min}:${ss}Z`;
+		}
+
+		if (this.coordsElem) {
+			const latDir = state.lat >= 0 ? 'N' : 'S';
+			const lonDir = state.lon >= 0 ? 'E' : 'W';
+			this.coordsElem.innerText = `POS: ${Math.abs(state.lat).toFixed(4)}°${latDir} ${Math.abs(state.lon).toFixed(4)}°${lonDir}`;
+		}
+
+		const pitchLines = document.getElementById('pitch-lines');
+		const horizon = document.getElementById('horizon-container');
+		if (pitchLines && horizon) {
+			horizon.style.transform = `translate(-50%, -50%) rotate(${-this.smoothedRoll}deg)`;
+			pitchLines.style.transform = `translateY(${this.smoothedPitch * 6}px)`;
+		}
+
+		this.drawMinimap(state);
+	}
+
+	drawMinimap(state) {
+		if (!this.miniCtx || !this.minimapCanvas) return;
+
+		const ctx = this.miniCtx;
+		const w = this.minimapCanvas.width || 250;
+		const h = this.minimapCanvas.height || 250;
+		const centerX = w / 2;
+		const centerY = h / 2;
+		const radius = Math.min(centerX, centerY) - 10;
+
+		ctx.clearRect(0, 0, w, h);
+
+		ctx.save();
+		ctx.translate(centerX, centerY);
+
+		const heading = this.smoothedHeading;
+		ctx.rotate(-heading * Math.PI / 180);
+
+		ctx.strokeStyle = 'rgba(0, 255, 0, 0.4)';
+		ctx.lineWidth = 1.5;
+
+		const metersPerGrid = this.minimapRange * 1000;
+		const verticalMeters = (this.currentZoom || (this.minimapRange * 1500)) * 1.1547;
+		const gridSize = (metersPerGrid * h) / verticalMeters;
+
+		const limit = radius * 2;
+		for (let x = 0; x <= limit; x += gridSize) {
+			ctx.beginPath();
+			ctx.moveTo(x, -limit); ctx.lineTo(x, limit); ctx.stroke();
+			if (x > 0) {
+				ctx.beginPath();
+				ctx.moveTo(-x, -limit); ctx.lineTo(-x, limit); ctx.stroke();
+			}
+		}
+		for (let y = 0; y <= limit; y += gridSize) {
+			ctx.beginPath();
+			ctx.moveTo(-limit, y); ctx.lineTo(limit, y); ctx.stroke();
+			if (y > 0) {
+				ctx.beginPath();
+				ctx.moveTo(-limit, -y); ctx.lineTo(limit, -y); ctx.stroke();
+			}
+		}
+
+		ctx.fillStyle = '#0f0';
+		ctx.font = 'bold 18px AceCombat';
+		ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+		ctx.shadowBlur = 4;
+		ctx.textAlign = 'center';
+
+		const directions = [
+			{ label: 'N', angle: 0 },
+			{ label: 'E', angle: 90 },
+			{ label: 'S', angle: 180 },
+			{ label: 'W', angle: 270 }
+		];
+
+		directions.forEach(dir => {
+			const rad = dir.angle * Math.PI / 180;
+			const dx = Math.sin(rad) * radius;
+			const dy = -Math.cos(rad) * radius;
+
+			ctx.save();
+			ctx.translate(dx, dy);
+			ctx.rotate(this.smoothedHeading * Math.PI / 180);
+			ctx.fillText(dir.label, 0, 5);
+			ctx.restore();
+		});
+
+		ctx.restore();
+
+		ctx.save();
+		ctx.translate(centerX, centerY);
+		ctx.fillStyle = '#0f0';
+		ctx.shadowBlur = 0;
+		ctx.beginPath();
+		ctx.moveTo(0, -12);
+		ctx.lineTo(8, 10);
+		ctx.lineTo(0, 5);
+		ctx.lineTo(-8, 10);
+		ctx.closePath();
+		ctx.fill();
+
+		ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(0, 0, radius, 0, Math.PI * 2);
+		ctx.stroke();
+
+		ctx.restore();
+
+		const sweepTime = (Date.now() / 1500) % 1;
+		ctx.strokeStyle = `rgba(0, 255, 0, ${0.6 * (1 - sweepTime)})`;
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(centerX, centerY, sweepTime * radius, 0, Math.PI * 2);
+		ctx.stroke();
+	}
+
+	updateFPS(fps) {
+		if (this.fpsElem) {
+			this.fpsElem.innerText = Math.round(fps).toString();
+		}
+	}
+}
+
+
+const States = {
+	MENU: 'MENU',
+	PICK_SPAWN: 'PICK_SPAWN',
+	TRANSITIONING: 'TRANSITIONING',
+	FLYING: 'FLYING',
+	PAUSED: 'PAUSED',
+	CRASHED: 'CRASHED'
+};
+
+let currentState = States.MENU;
+
+let gameSettings = {
+	graphicsQuality: 'medium',
+	antialiasing: true,
+	fogEffects: true,
+	fov: 75,
+	mouseSensitivity: 0.2,
+	showHud: true,
+	minimapRange: 1
+};
+
+function loadSettings() {
+	const saved = localStorage.getItem('flightSimSettings');
+	if (saved) {
+		try {
+			const parsed = JSON.parse(saved);
+			gameSettings = { ...gameSettings, ...parsed };
+		} catch (e) {
+			console.error('Failed to load settings', e);
+		}
+	}
+	applySettings();
+	updateSettingsUI();
+}
+
+function saveSettings() {
+	localStorage.setItem('flightSimSettings', JSON.stringify(gameSettings));
+}
+
+function updateSettingsUI() {
+	document.getElementById('graphicsQuality').value = gameSettings.graphicsQuality;
+	document.getElementById('antialiasing').checked = gameSettings.antialiasing;
+	document.getElementById('fogEffects').checked = gameSettings.fogEffects;
+	document.getElementById('fovSlider').value = gameSettings.fov;
+	document.getElementById('fovValue').textContent = gameSettings.fov;
+	document.getElementById('sensitivitySlider').value = gameSettings.mouseSensitivity;
+	document.getElementById('sensitivityValue').textContent = gameSettings.mouseSensitivity;
+	document.getElementById('showHud').checked = gameSettings.showHud;
+	document.getElementById('minimapRange').value = gameSettings.minimapRange.toString();
+}
+
+function applySettings() {
+	if (camera) {
+		camera.fov = gameSettings.fov;
+		camera.updateProjectionMatrix();
+	}
+
+	if (controller) {
+		controller.setSensitivity(gameSettings.mouseSensitivity);
+	}
+
+	if (hud) {
+		hud.setMinimapRange(gameSettings.minimapRange);
+	}
+
+	const viewer = getViewer();
+	if (viewer) {
+		if (gameSettings.graphicsQuality === 'low') {
+			viewer.resolutionScale = 0.5;
+			viewer.scene.globe.maximumScreenSpaceError = 4;
+		} else if (gameSettings.graphicsQuality === 'medium') {
+			viewer.resolutionScale = 0.75;
+			viewer.scene.globe.maximumScreenSpaceError = 2;
+		} else {
+			viewer.resolutionScale = 1.0;
+			viewer.scene.globe.maximumScreenSpaceError = 1.3;
+		}
+
+		viewer.scene.postProcessStages.fxaa.enabled = gameSettings.antialiasing;
+
+		viewer.scene.fog.enabled = gameSettings.fogEffects;
+		viewer.scene.atmosphere.show = gameSettings.fogEffects;
+	}
+
+	const hudElements = [
+		document.getElementById('hud-top-left'),
+		document.getElementById('hud-top-right'),
+		document.getElementById('hud-speed-box'),
+		document.getElementById('hud-alt-box'),
+		document.getElementById('coords'),
+		document.getElementById('minimap-container')
+	];
+
+	hudElements.forEach(el => {
+		if (el) {
+			el.style.display = gameSettings.showHud ? 'block' : 'none';
+		}
+	});
+}
+
+let state = {
+	lon: 106.8272,
+	lat: -6.1754,
+	alt: 1000,
+	heading: 0,
+	pitch: 0,
+	roll: 0,
+	speed: 0,
+	throttle: 0
+};
+
+let scene, camera, renderer;
+let planeModel;
+let jetFlames = [];
+let mixer, clock;
+let physics = new PlanePhysics();
+let controller = new PlaneController();
+let hud = new HUD();
+
+let fps = 0;
+let frameCount = 0;
+let lastFpsUpdate = 0;
+
+const BASE_PLANE_POS = new THREE.Vector3(0, -0.8, -2.75);
+let visualOffset = new THREE.Vector3().copy(BASE_PLANE_POS);
+let visualRotation = new THREE.Euler(0, 0, 0);
+let boostRoll = 0;
+let currentBoostZOffset = 0;
+let boostRollDirection = 1;
+let lastIsBoosting = false;
+let initialCameraView = null;
+
+const mainMenu = document.getElementById('mainMenu');
+const pauseMenu = document.getElementById('pauseMenu');
+const crashMenu = document.getElementById('crashMenu');
+const uiContainer = document.getElementById('uiContainer');
+const threeContainer = document.getElementById('threeContainer');
+const spawnInstruction = document.getElementById('spawnInstruction');
+const confirmSpawnBtn = document.getElementById('confirmSpawnBtn');
+
+let spawnMarker = null;
+
+function initThree() {
+	clock = new THREE.Clock();
+	scene = new THREE.Scene();
+	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+	renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	renderer.setPixelRatio(window.devicePixelRatio);
+	renderer.setClearColor(0x000000, 0);
+	threeContainer.appendChild(renderer.domElement);
+
+	threeContainer.classList.add('hidden');
+
+	const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+	scene.add(ambientLight);
+	const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+	directionalLight.position.set(5, 10, 5);
+	scene.add(directionalLight);
+
+	const loader = new GLTFLoader();
+	loader.load('./public/assets/models/low_poly_f-15.glb', (gltf) => {
+		const mesh = gltf.scene;
+
+		planeModel = new THREE.Group();
+		planeModel.add(mesh);
+		scene.add(planeModel);
+
+		mesh.rotation.y = Math.PI / 2;
+
+		const box = new THREE.Box3().setFromObject(mesh);
+		const center = box.getCenter(new THREE.Vector3());
+		mesh.position.sub(center);
+
+		planeModel.position.copy(BASE_PLANE_POS);
+		planeModel.scale.set(0.2, 0.2, 0.2);
+
+		const flameL = new JetFlame();
+		const flameR = new JetFlame();
+
+		flameL.group.position.set(-0.4, -0.065, 5);
+		flameR.group.position.set(0.4, -0.065, 5);
+
+
+		planeModel.add(flameL.group);
+		planeModel.add(flameR.group);
+		jetFlames.push(flameL, flameR);
+
+		mixer = new THREE.AnimationMixer(mesh);
+		const clip = THREE.AnimationClip.findByName(gltf.animations, 'F15 ldg');
+		if (clip) {
+			const action = mixer.clipAction(clip);
+			action.setLoop(THREE.LoopOnce);
+			action.clampWhenFinished = true;
+			action.play();
+		}
+	}, undefined, (error) => {
+		console.error('Error loading model:', error);
+	});
+}
+
+function update(dt) {
+	if (currentState !== States.FLYING) return;
+
+	const input = controller.update();
+	const physicsResult = physics.update(input, dt);
+
+	const prevSpeed = state.speed;
+	state.speed = physicsResult.speed;
+	state.pitch = physicsResult.pitch;
+	state.roll = physicsResult.roll;
+	state.heading = physicsResult.heading;
+	state.throttle = input.throttle;
+	state.yaw = input.yaw;
+	state.isBoosting = physicsResult.isBoosting;
+
+	const newPos = movePosition(state.lon, state.lat, state.alt, state.heading, state.pitch, state.speed * dt);
+	state.lon = newPos.lon;
+	state.lat = newPos.lat;
+	state.alt = newPos.alt;
+
+	checkCrash();
+
+	hud.update(state);
+
+	const planeHPR = new Cesium.HeadingPitchRoll(
+		Cesium.Math.toRadians(state.heading),
+		Cesium.Math.toRadians(state.pitch),
+		Cesium.Math.toRadians(state.roll)
+	);
+	const planeQuat = Cesium.Quaternion.fromHeadingPitchRoll(planeHPR);
+
+	const orbitHPR = new Cesium.HeadingPitchRoll(
+		Cesium.Math.toRadians(input.cameraYaw),
+		Cesium.Math.toRadians(-input.cameraPitch),
+		0
+	);
+	const orbitQuat = Cesium.Quaternion.fromHeadingPitchRoll(orbitHPR);
+
+	const finalQuat = Cesium.Quaternion.multiply(planeQuat, orbitQuat, new Cesium.Quaternion());
+	const finalHPR = Cesium.HeadingPitchRoll.fromQuaternion(finalQuat);
+
+	setCameraToPlane(
+		state.lon, state.lat, state.alt,
+		Cesium.Math.toDegrees(finalHPR.heading),
+		Cesium.Math.toDegrees(finalHPR.pitch),
+		Cesium.Math.toDegrees(finalHPR.roll)
+	);
+
+	if (planeModel) {
+		const accel = (state.speed - prevSpeed) / dt;
+		const accelInertia = input.isDragging ? 0 : Math.max(-0.5, Math.min(1.5, accel * 0.001));
+		let targetZ = BASE_PLANE_POS.z - accelInertia;
+
+		let boostZOffset = 0;
+		if (physicsResult.isBoosting) {
+			if (!lastIsBoosting) {
+				boostRollDirection = Math.random() > 0.5 ? 1 : -1;
+			}
+
+			const T = physicsResult.boostDuration;
+			const p = Math.max(0, Math.min(1.0, 1.0 - (physicsResult.boostTimeRemaining / T)));
+
+			const totalRotationRad = Math.PI * 2 * physicsResult.boostRotations * boostRollDirection;
+
+			if (p < 0.2) {
+				const localP = p / 0.2;
+				boostZOffset = -(localP * localP) * 1.5;
+				boostRoll = 0;
+			}
+			else if (p < 0.8) {
+				const localP = (p - 0.2) / 0.6;
+				boostZOffset = -1.5;
+				const easedP = localP < 0.5
+					? 4 * localP * localP * localP
+					: 1 - Math.pow(-2 * localP + 2, 3) / 2;
+				boostRoll = easedP * (Math.PI * 2 * physicsResult.boostRotations) * boostRollDirection;
+			}
+			else {
+				const localP = (p - 0.8) / 0.2;
+				const easedReturn = localP * localP * (3 - 2 * localP);
+				boostZOffset = -1.5 + (easedReturn * 0.7);
+				boostRoll = (Math.PI * 2 * physicsResult.boostRotations) * boostRollDirection;
+			}
+		} else {
+			boostRoll = 0;
+			boostZOffset = 0;
+		}
+		lastIsBoosting = physicsResult.isBoosting;
+
+		const zLerp = physicsResult.isBoosting ? 10.0 * dt : 2.0 * dt;
+		currentBoostZOffset += (boostZOffset - currentBoostZOffset) * zLerp;
+		targetZ += currentBoostZOffset;
+
+
+		const time = performance.now() * 0.001;
+		const idleX = Math.sin(time * 0.8) * 0.035;
+		const idleY = Math.cos(time * 0.6) * 0.025;
+		const idleRotX = Math.sin(time * 0.5) * 0.015;
+		const idleRotY = Math.cos(time * 0.4) * 0.015;
+		const idleRotZ = Math.sin(time * 0.7) * 0.025;
+
+		const targetX = input.isDragging ? BASE_PLANE_POS.x : BASE_PLANE_POS.x - (input.roll * 0.6) - (input.yaw * 0.12) + idleX;
+		const targetY = input.isDragging ? BASE_PLANE_POS.y : BASE_PLANE_POS.y - (input.pitch * 0.1) + idleY;
+
+		let targetRotZ = input.isDragging ? 0 : THREE.MathUtils.degToRad(-input.roll * 15) + idleRotZ;
+		const targetRotX = input.isDragging ? 0 : THREE.MathUtils.degToRad(input.pitch * 10) + idleRotX;
+		const targetRotY = input.isDragging ? 0 : THREE.MathUtils.degToRad(-input.yaw * 4) + idleRotY;
+
+		const lerpFactor = physicsResult.isBoosting ? 3.0 * dt : 5.0 * dt;
+		visualOffset.x += (targetX - visualOffset.x) * lerpFactor;
+		visualOffset.y += (targetY - visualOffset.y) * lerpFactor;
+		visualOffset.z += (targetZ - visualOffset.z) * lerpFactor;
+
+		visualRotation.z += (targetRotZ - visualRotation.z) * lerpFactor;
+		visualRotation.x += (targetRotX - visualRotation.x) * lerpFactor;
+		visualRotation.y += (targetRotY - visualRotation.y) * lerpFactor;
+
+		const orbitQ = new THREE.Quaternion().setFromEuler(
+			new THREE.Euler(
+				THREE.MathUtils.degToRad(-input.cameraPitch),
+				THREE.MathUtils.degToRad(-input.cameraYaw),
+				0,
+				'YXZ'
+			)
+		);
+
+		planeModel.position.copy(visualOffset);
+
+		const flightLagQ = new THREE.Quaternion().setFromEuler(
+			new THREE.Euler(visualRotation.x, visualRotation.y, visualRotation.z + boostRoll)
+		);
+
+		const combinedQ = orbitQ.clone().invert().multiply(flightLagQ);
+		planeModel.quaternion.copy(combinedQ);
+
+		if (jetFlames.length > 0) {
+			jetFlames.forEach(flame => {
+				flame.update(state.throttle, state.isBoosting, clock.getElapsedTime(), dt);
+			});
+		}
+	}
+}
+
+let lastCrashCheck = 0;
+let flightStartTime = 0;
+
+function checkCrash() {
+	if (currentState !== States.FLYING) return;
+
+	const now = Date.now();
+	if (now - lastCrashCheck < 100) return;
+	lastCrashCheck = now;
+
+	if (now - flightStartTime < 3000) return;
+
+	const viewer = getViewer();
+	if (!viewer) return;
+
+	const cartographic = Cesium.Cartographic.fromDegrees(state.lon, state.lat);
+	const terrainHeight = viewer.scene.globe.getHeight(cartographic);
+
+	if (terrainHeight !== undefined && state.alt <= terrainHeight + 5) {
+		currentState = States.CRASHED;
+		uiContainer.classList.add('hidden');
+		threeContainer.classList.add('hidden');
+		crashMenu.classList.remove('hidden');
+	}
+}
+
+function animate() {
+	requestAnimationFrame(animate);
+
+	const dt = clock ? clock.getDelta() : 0.016;
+	const now = performance.now();
+
+	frameCount++;
+	if (now - lastFpsUpdate >= 1000) {
+		fps = (frameCount * 1000) / (now - lastFpsUpdate);
+		frameCount = 0;
+		lastFpsUpdate = now;
+		hud.updateFPS(fps);
+	}
+
+	if (currentState === States.FLYING || currentState === States.PAUSED || currentState === States.TRANSITIONING) {
+		if (currentState === States.FLYING) {
+			update(dt);
+		}
+
+		if (mixer) mixer.update(dt);
+
+		renderer.render(scene, camera);
+	} else {
+		threeContainer.classList.add('hidden');
+	}
+}
+
+function setupModalListeners() {
+	const modals = document.querySelectorAll('.modal');
+
+	const closeAllModals = () => {
+		modals.forEach(m => m.classList.add('hidden'));
+	};
+
+	document.getElementById('helpBtn').onclick = () => {
+		closeAllModals();
+		document.getElementById('helpModal').classList.remove('hidden');
+	};
+
+	document.getElementById('optionsBtn').onclick = () => {
+		closeAllModals();
+		updateSettingsUI();
+		document.getElementById('optionsModal').classList.remove('hidden');
+	};
+
+	document.getElementById('pauseOptionsBtn').onclick = () => {
+		updateSettingsUI();
+		document.getElementById('optionsModal').classList.remove('hidden');
+	};
+
+	document.getElementById('creditsBtn').onclick = () => {
+		closeAllModals();
+		document.getElementById('creditsModal').classList.remove('hidden');
+	};
+
+	document.getElementById('aboutBtn').onclick = () => {
+		closeAllModals();
+		document.getElementById('aboutBtnModal').classList.remove('hidden');
+	};
+
+	document.getElementById('fovSlider').oninput = (e) => {
+		document.getElementById('fovValue').textContent = e.target.value;
+	};
+
+	document.getElementById('sensitivitySlider').oninput = (e) => {
+		document.getElementById('sensitivityValue').textContent = e.target.value;
+	};
+
+	document.getElementById('saveOptionsBtn').onclick = () => {
+		gameSettings.graphicsQuality = document.getElementById('graphicsQuality').value;
+		gameSettings.antialiasing = document.getElementById('antialiasing').checked;
+		gameSettings.fogEffects = document.getElementById('fogEffects').checked;
+		gameSettings.fov = parseInt(document.getElementById('fovSlider').value);
+		gameSettings.mouseSensitivity = parseFloat(document.getElementById('sensitivitySlider').value);
+		gameSettings.showHud = document.getElementById('showHud').checked;
+		gameSettings.minimapRange = parseInt(document.getElementById('minimapRange').value);
+
+		saveSettings();
+		applySettings();
+		closeAllModals();
+	};
+
+	document.querySelectorAll('.close-modal').forEach(btn => {
+		btn.onclick = (e) => {
+			e.stopPropagation();
+			btn.closest('.modal').classList.add('hidden');
+		};
+	});
+
+	window.addEventListener('click', (event) => {
+		if (event.target.classList.contains('modal')) {
+			event.target.classList.add('hidden');
+		}
+	});
+}
+
+document.getElementById('startBtn').onclick = () => {
+	document.querySelectorAll('.modal').forEach(m => m.classList.add('hidden'));
+	mainMenu.classList.add('hidden');
+	enterSpawnPicking(false);
+};
+
+setupModalListeners();
+
+document.getElementById('resumeBtn').onclick = () => {
+	pauseMenu.classList.add('hidden');
+	uiContainer.classList.remove('hidden');
+	currentState = States.FLYING;
+};
+
+document.getElementById('restartBtn').onclick = () => {
+	pauseMenu.classList.add('hidden');
+	enterSpawnPicking(true);
+};
+
+document.getElementById('quitBtn').onclick = () => {
+	location.reload();
+};
+
+document.getElementById('respawnBtn').onclick = () => {
+	crashMenu.classList.add('hidden');
+	enterSpawnPicking(true);
+};
+
+function enterSpawnPicking(useVignette = true) {
+	const vignette = document.getElementById('transition-vignette');
+	if (useVignette && vignette) vignette.style.opacity = '1';
+
+	const delay = useVignette ? 500 : 0;
+
+	setTimeout(() => {
+		spawnInstruction.classList.remove('hidden');
+		threeContainer.classList.add('hidden');
+		uiContainer.classList.add('hidden');
+		currentState = States.PICK_SPAWN;
+		confirmSpawnBtn.classList.add('hidden');
+
+		const searchInput = document.getElementById('locationSearch');
+		const instructionText = document.getElementById('instruction-text');
+		const resultsContainer = document.getElementById('search-results');
+
+		if (searchInput) {
+			searchInput.value = '';
+			searchInput.style.display = 'none';
+		}
+		if (instructionText) {
+			instructionText.style.display = 'block';
+		}
+		if (resultsContainer) {
+			resultsContainer.style.display = 'none';
+		}
+
+		setControlsEnabled(true);
+
+		if (spawnMarker) {
+			const viewer = getViewer();
+			viewer.entities.remove(spawnMarker);
+			spawnMarker = null;
+		}
+
+		const viewer = getViewer();
+		viewer.camera.flyTo({
+			destination: Cesium.Cartesian3.fromDegrees(state.lon, state.lat, 15000),
+			duration: 1.5,
+			complete: () => {
+				if (vignette) vignette.style.opacity = '0';
+			}
+		});
+	}, delay);
+}
+
+function exitSpawnPicking() {
+	spawnInstruction.classList.add('hidden');
+	confirmSpawnBtn.classList.add('hidden');
+	mainMenu.classList.remove('hidden');
+	currentState = States.MENU;
+
+	setControlsEnabled(false);
+
+	if (spawnMarker) {
+		const viewer = getViewer();
+		viewer.entities.remove(spawnMarker);
+		spawnMarker = null;
+	}
+
+	const viewer = getViewer();
+	viewer.camera.flyTo({
+		...initialCameraView,
+		duration: 1.5
+	});
+}
+
+function setupSpawnPicker() {
+	const viewer = getViewer();
+	const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+
+	handler.setInputAction((click) => {
+		if (currentState !== States.PICK_SPAWN) return;
+
+		const ray = viewer.camera.getPickRay(click.position);
+		const cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+
+		if (cartesian) {
+			const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+			const lon = Cesium.Math.toDegrees(cartographic.longitude);
+			const lat = Cesium.Math.toDegrees(cartographic.latitude);
+
+			state.lon = lon;
+			state.lat = lat;
+			state.alt = Math.max(0, cartographic.height) + 1500;
+
+			Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic])
+				.then(([p]) => state.alt = Math.max(0, p.height || 0) + 1500)
+				.catch(() => { });
+
+			if (spawnMarker) {
+				viewer.entities.remove(spawnMarker);
+			}
+			spawnMarker = viewer.entities.add({
+				position: cartesian,
+				point: {
+					pixelSize: 15,
+					color: Cesium.Color.RED,
+					outlineColor: Cesium.Color.WHITE,
+					outlineWidth: 2,
+					disableDepthTestDistance: Number.POSITIVE_INFINITY
+				},
+				label: {
+					text: "Target Spawn Location",
+					font: "14pt AceCombat",
+					style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+					outlineWidth: 2,
+					verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+					pixelOffset: new Cesium.Cartesian2(0, -20),
+					disableDepthTestDistance: Number.POSITIVE_INFINITY
+				}
+			});
+
+			confirmSpawnBtn.classList.remove('hidden');
+		}
+	}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+}
+
+function setupLocationSearch() {
+	const searchInput = document.getElementById('locationSearch');
+	const resultsContainer = document.getElementById('search-results');
+	const instructionText = document.getElementById('instruction-text');
+	const searchToggleBtn = document.getElementById('search-toggle-btn');
+	const originalSearchIcon = searchToggleBtn ? searchToggleBtn.innerHTML : '';
+	let debounceTimer;
+
+	if (searchToggleBtn) {
+		searchToggleBtn.onclick = (e) => {
+			e.stopPropagation();
+			const isSearching = searchInput.style.display === 'block';
+
+			if (isSearching) {
+				searchInput.style.display = 'none';
+				instructionText.style.display = 'block';
+				resultsContainer.style.display = 'none';
+			} else {
+				searchInput.style.display = 'block';
+				instructionText.style.display = 'none';
+				searchInput.focus();
+			}
+		};
+	}
+
+	searchInput.addEventListener('input', (e) => {
+		clearTimeout(debounceTimer);
+		const query = e.target.value.trim();
+
+		if (query.length < 3) {
+			resultsContainer.style.display = 'none';
+			return;
+		}
+
+		debounceTimer = setTimeout(async () => {
+			if (searchToggleBtn) {
+				searchToggleBtn.innerHTML = '<div class="loader-spinner"></div>';
+			}
+
+			try {
+				const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+				const data = await response.json();
+
+				resultsContainer.innerHTML = '';
+				if (data.length > 0) {
+					data.forEach(item => {
+						const div = document.createElement('div');
+						div.textContent = item.display_name;
+						div.style.padding = '10px';
+						div.style.cursor = 'pointer';
+						div.onclick = () => {
+							const lon = parseFloat(item.lon);
+							const lat = parseFloat(item.lat);
+
+							const viewer = getViewer();
+							const position = Cesium.Cartesian3.fromDegrees(lon, lat);
+
+							state.lon = lon;
+							state.lat = lat;
+							state.alt = 1500;
+
+							const cartographic = Cesium.Cartographic.fromDegrees(lon, lat);
+							Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, [cartographic])
+								.then(([p]) => {
+									state.alt = Math.max(0, p.height || 0) + 1500;
+								})
+								.catch(() => { });
+
+							viewer.camera.flyTo({
+								destination: Cesium.Cartesian3.fromDegrees(lon, lat, 15000),
+								duration: 1.5
+							});
+
+							if (spawnMarker) {
+								viewer.entities.remove(spawnMarker);
+							}
+							spawnMarker = viewer.entities.add({
+								position: position,
+								point: {
+									pixelSize: 15,
+									color: Cesium.Color.RED,
+									outlineColor: Cesium.Color.WHITE,
+									outlineWidth: 2,
+									disableDepthTestDistance: Number.POSITIVE_INFINITY
+								},
+								label: {
+									text: item.display_name.split(',')[0],
+									font: "14pt AceCombat",
+									style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+									outlineWidth: 2,
+									verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+									pixelOffset: new Cesium.Cartesian2(0, -20),
+									disableDepthTestDistance: Number.POSITIVE_INFINITY
+								}
+							});
+
+							confirmSpawnBtn.classList.remove('hidden');
+							resultsContainer.style.display = 'none';
+
+							searchInput.style.display = 'none';
+							instructionText.style.display = 'block';
+							searchInput.value = item.display_name;
+						};
+						resultsContainer.appendChild(div);
+					});
+					resultsContainer.style.display = 'block';
+				} else {
+					resultsContainer.style.display = 'none';
+				}
+			} catch (error) {
+				console.error('Search error:', error);
+			} finally {
+				if (searchToggleBtn) {
+					searchToggleBtn.innerHTML = originalSearchIcon;
+				}
+			}
+		}, 500);
+	});
+
+	document.addEventListener('click', (e) => {
+		if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target) && !searchToggleBtn.contains(e.target)) {
+			resultsContainer.style.display = 'none';
+			if (searchInput.style.display === 'block') {
+				searchInput.style.display = 'none';
+				instructionText.style.display = 'block';
+			}
+		}
+	});
+}
+
+document.getElementById('confirmSpawnBtn').onclick = () => {
+	const vignette = document.getElementById('transition-vignette');
+	if (vignette) vignette.style.opacity = '1';
+
+	setTimeout(() => {
+		const viewer = getViewer();
+		if (spawnMarker) {
+			viewer.entities.remove(spawnMarker);
+			spawnMarker = null;
+		}
+
+		setControlsEnabled(false);
+
+		state.speed = 100;
+		state.pitch = 0;
+		state.roll = 0;
+		state.heading = 0;
+
+		visualOffset.copy(BASE_PLANE_POS);
+		visualRotation.set(0, 0, 0);
+		boostRoll = 0;
+		currentBoostZOffset = 0;
+		lastIsBoosting = false;
+
+		controller.reset();
+		physics = new PlanePhysics();
+		physics.reset(state.lon, state.lat, state.alt, state.heading, state.pitch, state.roll);
+
+		hud.resetTime();
+		hud.resizeMinimap();
+
+		spawnInstruction.classList.add('hidden');
+		confirmSpawnBtn.classList.add('hidden');
+
+		currentState = States.TRANSITIONING;
+
+		viewer.camera.flyTo({
+			destination: Cesium.Cartesian3.fromDegrees(state.lon, state.lat, state.alt),
+			orientation: {
+				heading: Cesium.Math.toRadians(state.heading),
+				pitch: Cesium.Math.toRadians(state.pitch),
+				roll: Cesium.Math.toRadians(state.roll)
+			},
+			duration: 2.0,
+			easingFunction: Cesium.EasingFunction.QUADRATIC_IN_OUT,
+			complete: () => {
+				flightStartTime = Date.now();
+				uiContainer.classList.remove('hidden');
+				threeContainer.classList.remove('hidden');
+				hud.resizeMinimap();
+				currentState = States.FLYING;
+				if (vignette) vignette.style.opacity = '0';
+			}
+		});
+	}, 500);
+};
+
+window.addEventListener('keydown', (e) => {
+	const key = e.key.toLowerCase();
+	if (key === 'escape') {
+		const openModals = document.querySelectorAll('.modal:not(.hidden)');
+		if (openModals.length > 0) {
+			openModals.forEach(m => m.classList.add('hidden'));
+			return;
+		}
+	}
+
+	if (key === 'escape' || key === 'p') {
+		if (currentState === States.FLYING) {
+			currentState = States.PAUSED;
+			uiContainer.classList.add('hidden');
+			pauseMenu.classList.remove('hidden');
+		} else if (currentState === States.PAUSED) {
+			currentState = States.FLYING;
+			pauseMenu.classList.add('hidden');
+			uiContainer.classList.remove('hidden');
+		} else if (currentState === States.PICK_SPAWN && key === 'escape') {
+			exitSpawnPicking();
+		}
+	}
+});
+
+document.addEventListener('visibilitychange', () => {
+	if (document.hidden && currentState === States.FLYING) {
+		currentState = States.PAUSED;
+		uiContainer.classList.add('hidden');
+		pauseMenu.classList.remove('hidden');
+	}
+});
+
+window.addEventListener('blur', () => {
+	if (currentState === States.FLYING) {
+		currentState = States.PAUSED;
+		uiContainer.classList.add('hidden');
+		pauseMenu.classList.remove('hidden');
+	}
+});
+
+const viewer = initCesium();
+
+initialCameraView = {
+	destination: viewer.camera.position.clone(),
+	orientation: {
+		heading: viewer.camera.heading,
+		pitch: viewer.camera.pitch,
+		roll: viewer.camera.roll
+	}
+};
+
+initThree();
+setupSpawnPicker();
+setupLocationSearch();
+loadSettings();
+
+uiContainer.classList.add('hidden');
+threeContainer.classList.add('hidden');
+
+animate();
+
+window.addEventListener('resize', () => {
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize(window.innerWidth, window.innerHeight);
+
+	const viewer = getViewer();
+	if (viewer) viewer.resize();
+});
+</script>
+</body>
+
+</html>
