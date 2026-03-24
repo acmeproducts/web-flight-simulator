@@ -1,0 +1,89 @@
+# ═══════════════════════════════════════════════════════════════════════
+# Web Flight Simulator — Build & Deploy
+#
+# Runs on every push to main/master:
+#   1. Installs Node dependencies
+#   2. Builds the Vite project (CesiumJS + Three.js bundle)
+#   3. Uploads the dist/ folder as a GitHub Pages artifact
+#   4. Deploys to GitHub Pages (requires Pages enabled in repo settings)
+#
+# On pull requests: only the build step runs (no deploy).
+#
+# Required GitHub repository settings:
+#   Settings → Pages → Source: "GitHub Actions"
+#
+# Optional secrets (add in Settings → Secrets → Actions):
+#   CESIUM_ION_TOKEN  — your CesiumJS Ion access token (see SETUP guide)
+# ═══════════════════════════════════════════════════════════════════════
+
+name: Build & Deploy
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+# Allow one concurrent deploy; cancel older in-progress runs
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (Vite)
+        run: npm run build
+        env:
+          # Inject your Cesium Ion token at build time.
+          # If CESIUM_ION_TOKEN is not set the app uses the default
+          # anonymous token (terrain may be limited).
+          CESIUM_ION_TOKEN: ${{ secrets.CESIUM_ION_TOKEN }}
+          # Set this if your site is hosted at a sub-path, e.g. /my-repo/
+          # Leave empty for root-level hosting (custom domain or user pages).
+          BASE_URL: ${{ vars.BASE_URL || '/' }}
+
+      - name: Upload Pages artifact
+        # Only upload for pushes to main/master (not PRs)
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+
+  # ─────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    # Only deploy on push to main/master
+    if: github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

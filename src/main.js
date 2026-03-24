@@ -7,6 +7,8 @@ import { movePosition } from './utils/math';
 import { HUD } from './ui/hud';
 import { JetFlame } from './plane/jetFlame';
 import * as Cesium from 'cesium';
+import { MobileControls } from './mobile/mobileControls';
+import './mobile/mobileControls.css';
 
 const States = {
 	MENU: 'MENU',
@@ -26,7 +28,9 @@ let gameSettings = {
 	fov: 75,
 	mouseSensitivity: 0.2,
 	showHud: true,
-	minimapRange: 1
+	minimapRange: 1,
+	mobileControlMode: 'config1',   // 'config1' | 'config2' | 'config3'
+	forceMobileControls: false       // enable on desktop for testing
 };
 
 function loadSettings() {
@@ -57,6 +61,8 @@ function updateSettingsUI() {
 	document.getElementById('sensitivityValue').textContent = gameSettings.mouseSensitivity;
 	document.getElementById('showHud').checked = gameSettings.showHud;
 	document.getElementById('minimapRange').value = gameSettings.minimapRange.toString();
+	document.getElementById('mobileControlMode').value = gameSettings.mobileControlMode;
+	document.getElementById('forceMobileControls').checked = gameSettings.forceMobileControls;
 }
 
 function applySettings() {
@@ -126,6 +132,7 @@ let mixer, clock;
 let physics = new PlanePhysics();
 let controller = new PlaneController();
 let hud = new HUD();
+let mobileControls = new MobileControls();
 
 let fps = 0;
 let frameCount = 0;
@@ -213,7 +220,9 @@ function initThree() {
 function update(dt) {
 	if (currentState !== States.FLYING) return;
 
-	const input = controller.update();
+	// Use mobile controls when active; fall back to keyboard/mouse
+	const mobileInput = mobileControls.active ? mobileControls.update(dt) : null;
+	const input = mobileInput || controller.update();
 	const physicsResult = physics.update(input, dt);
 
 	const prevSpeed = state.speed;
@@ -376,6 +385,7 @@ function checkCrash() {
 		uiContainer.classList.add('hidden');
 		threeContainer.classList.add('hidden');
 		crashMenu.classList.remove('hidden');
+		mobileControls.hide();
 	}
 }
 
@@ -455,6 +465,8 @@ function setupModalListeners() {
 		gameSettings.mouseSensitivity = parseFloat(document.getElementById('sensitivitySlider').value);
 		gameSettings.showHud = document.getElementById('showHud').checked;
 		gameSettings.minimapRange = parseInt(document.getElementById('minimapRange').value);
+		gameSettings.mobileControlMode = document.getElementById('mobileControlMode').value;
+		gameSettings.forceMobileControls = document.getElementById('forceMobileControls').checked;
 
 		saveSettings();
 		applySettings();
@@ -487,6 +499,7 @@ document.getElementById('resumeBtn').onclick = () => {
 	pauseMenu.classList.add('hidden');
 	uiContainer.classList.remove('hidden');
 	currentState = States.FLYING;
+	mobileControls.show();
 };
 
 document.getElementById('restartBtn').onclick = () => {
@@ -513,6 +526,7 @@ function enterSpawnPicking(useVignette = true) {
 		spawnInstruction.classList.remove('hidden');
 		threeContainer.classList.add('hidden');
 		uiContainer.classList.add('hidden');
+		mobileControls.deactivate();
 		currentState = States.PICK_SPAWN;
 		confirmSpawnBtn.classList.add('hidden');
 
@@ -804,6 +818,11 @@ document.getElementById('confirmSpawnBtn').onclick = () => {
 				hud.resizeMinimap();
 				currentState = States.FLYING;
 				if (vignette) vignette.style.opacity = '0';
+				// Activate mobile controls if on a touch device or forced
+				if (MobileControls.isMobile() || gameSettings.forceMobileControls) {
+					mobileControls.activate(gameSettings.mobileControlMode);
+					mobileControls.show();
+				}
 			}
 		});
 	}, 500);
@@ -824,10 +843,12 @@ window.addEventListener('keydown', (e) => {
 			currentState = States.PAUSED;
 			uiContainer.classList.add('hidden');
 			pauseMenu.classList.remove('hidden');
+			mobileControls.hide();
 		} else if (currentState === States.PAUSED) {
 			currentState = States.FLYING;
 			pauseMenu.classList.add('hidden');
 			uiContainer.classList.remove('hidden');
+			mobileControls.show();
 		} else if (currentState === States.PICK_SPAWN && key === 'escape') {
 			exitSpawnPicking();
 		}
@@ -839,6 +860,7 @@ document.addEventListener('visibilitychange', () => {
 		currentState = States.PAUSED;
 		uiContainer.classList.add('hidden');
 		pauseMenu.classList.remove('hidden');
+		mobileControls.hide();
 	}
 });
 
@@ -847,6 +869,7 @@ window.addEventListener('blur', () => {
 		currentState = States.PAUSED;
 		uiContainer.classList.add('hidden');
 		pauseMenu.classList.remove('hidden');
+		mobileControls.hide();
 	}
 });
 
