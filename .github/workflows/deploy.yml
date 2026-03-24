@@ -55,9 +55,10 @@ jobs:
           # If CESIUM_ION_TOKEN is not set the app uses the default
           # anonymous token (terrain may be limited).
           CESIUM_ION_TOKEN: ${{ secrets.CESIUM_ION_TOKEN }}
-          # Set this if your site is hosted at a sub-path, e.g. /my-repo/
-          # Leave empty for root-level hosting (custom domain or user pages).
-          BASE_URL: ${{ vars.BASE_URL || '/' }}
+          # Base path for asset URLs.
+          # - If BASE_URL repo variable is set, use it (e.g. '/' for custom domain).
+          # - Otherwise auto-derive from repo name (e.g. /web-flight-simulator/).
+          BASE_URL: ${{ vars.BASE_URL || format('/{0}/', github.event.repository.name) }}
 
       - name: Upload Pages artifact
         # Only upload for pushes to main/master (not PRs)
