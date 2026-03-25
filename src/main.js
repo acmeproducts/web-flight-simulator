@@ -177,7 +177,7 @@ function initThree() {
 	scene.add(directionalLight);
 
 	const loader = new GLTFLoader();
-	loader.load('/assets/models/low_poly_f-15.glb', (gltf) => {
+	loader.load(import.meta.env.BASE_URL + 'assets/models/low_poly_f-15.glb', (gltf) => {
 		const mesh = gltf.scene;
 
 		planeModel = new THREE.Group();
