@@ -593,7 +593,8 @@ function setupSpawnPicker() {
 		if (currentState !== States.PICK_SPAWN) return;
 
 		const ray = viewer.camera.getPickRay(click.position);
-		const cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+		const cartesian = viewer.scene.globe.pick(ray, viewer.scene)
+			|| viewer.camera.pickEllipsoid(click.position);
 
 		if (cartesian) {
 			const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
