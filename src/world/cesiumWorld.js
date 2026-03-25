@@ -45,7 +45,7 @@ export function initCesium() {
 
 	[viewer, miniViewer].forEach(v => {
 		v.scene.requestRenderMode = true;
-		v.scene.maximumRenderTimeChange = Infinity;
+		v.scene.maximumRenderTimeChange = 0;
 		v.scene.globe.maximumScreenSpaceError = 2;
 		v.resolutionScale = 0.75;
 

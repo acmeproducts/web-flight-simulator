@@ -559,6 +559,7 @@ function enterSpawnPicking(useVignette = true) {
 			duration: 1.5,
 			complete: () => {
 				if (vignette) vignette.style.opacity = '0';
+				viewer.scene.requestRender();
 			}
 		});
 	}, delay);
