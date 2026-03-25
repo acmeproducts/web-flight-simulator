@@ -51,10 +51,8 @@ jobs:
       - name: Build (Vite)
         run: npm run build
         env:
-          # Inject your Cesium Ion token at build time.
-          # If CESIUM_ION_TOKEN is not set the app uses the default
-          # anonymous token (terrain may be limited).
-          CESIUM_ION_TOKEN: ${{ secrets.CESIUM_ION_TOKEN }}
+          # Must be VITE_-prefixed so Vite exposes it to client code via import.meta.env
+          VITE_CESIUM_ION_TOKEN: ${{ secrets.CESIUM_ION_TOKEN }}
 
       - name: Upload Pages artifact
         # Only upload for pushes to main/master (not PRs)

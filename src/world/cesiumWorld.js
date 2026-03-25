@@ -1,5 +1,7 @@
 import * as Cesium from 'cesium';
 
+Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_ION_TOKEN;
+
 let viewer;
 let miniViewer;
 
